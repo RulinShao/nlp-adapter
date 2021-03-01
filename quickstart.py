@@ -1,7 +1,6 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AdapterType
 
-print('a')
 
 model = AutoModelForSequenceClassification.from_pretrained("bert-base-uncased")
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
