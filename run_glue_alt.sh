@@ -3,7 +3,7 @@ export TASK_NAME=cola
 #export WANDB_PROJECT=distilbert
 
 python run_glue_alt.py \
-  --model_name_or_path bert-base-uncased \
+  --model_name_or_path roberta-base \
   --task_name $TASK_NAME \
   --do_train \
   --do_eval \
@@ -16,3 +16,8 @@ python run_glue_alt.py \
   --overwrite_output_dir \
   --train_adapter \
   --adapter_config pfeiffer
+
+
+# bert-base-uncased
+# distilbert-base-uncased
+# roberta-base
