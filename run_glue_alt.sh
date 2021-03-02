@@ -1,11 +1,13 @@
 export GLUE_DIR=/home/hh239/GLUE-baselines/glue_data/
 export TASK_NAME=cola
+#export WANDB_PROJECT=distilbert
 
 python run_glue_alt.py \
-  --model_name_or_path bert-base-cased \
+  --model_name_or_path bert-base-uncased \
   --task_name $TASK_NAME \
   --do_train \
   --do_eval \
+  --evaluate_during_training \
   --max_seq_length 128 \
   --per_device_train_batch_size 32 \
   --learning_rate 1e-4 \
