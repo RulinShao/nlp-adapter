@@ -3,6 +3,7 @@ export TASK_NAME=cola
 export WANDB_PROJECT=distilbert
 export MODEL_NAME=distilbert-base-uncased
 
+
 #python run_glue_alt.py \
 python -m torch.distributed.launch \
   --nproc_per_node 8 run_glue_alt.py \
