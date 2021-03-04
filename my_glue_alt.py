@@ -14,7 +14,7 @@ from typing import Optional
 import numpy as np
 from datasets import load_dataset, load_metric
 
-import transformers
+import transformers.utils
 from transformers import (
     AdapterConfig,
     AdapterType,
@@ -29,6 +29,7 @@ from transformers import (
     TrainingArguments,
     default_data_collator,
     set_seed,
+    AutoModelForSequenceClassification,
 )
 from transformers.trainer_utils import is_main_process
 
@@ -144,17 +145,6 @@ def main():
             "Use --overwrite_output_dir to overcome."
         )
 
-    # Setup logging
-    logging.basicConfig(
-        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
-        datefmt="%m/%d/%Y %H:%M:%S",
-        level=logging.INFO if is_main_process(training_args.local_rank) else logging.WARN,
-    )
-
-    # Set the verbosity to info of the Transformers logger (on main process only):
-    if is_main_process(training_args.local_rank):
-        transformers.utils.logging.set_verbosity_info()
-
     # Set seed before initializing model.
     set_seed(training_args.seed)
 
@@ -167,104 +157,55 @@ def main():
     # Labels
     label_list = None
 
-    is_regression = data_args.task_name == "stsb"
-    if not is_regression:
-        label_list = datasets["train"].features["label"].names
-        num_labels = len(label_list)
-    else:
-        num_labels = 1
-
     # Load pretrained model and tokenizer
-    config = AutoConfig.from_pretrained(
-        model_args.config_name if model_args.config_name else model_args.model_name_or_path,
-        num_labels=num_labels,
-        finetuning_task=data_args.task_name,
-        cache_dir=model_args.cache_dir,
-    )
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
-        cache_dir=model_args.cache_dir,
-        use_fast=model_args.use_fast_tokenizer,
-    )
+    # config = AutoConfig.from_pretrained(
+    #     model_args.config_name if model_args.config_name else model_args.model_name_or_path,
+    #     num_labels=num_labels,
+    #     finetuning_task=data_args.task_name,
+    #     cache_dir=model_args.cache_dir,
+    # )
+    # tokenizer = AutoTokenizer.from_pretrained(
+    #     model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
+    #     cache_dir=model_args.cache_dir,
+    #     use_fast=model_args.use_fast_tokenizer,
+    # )
+    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
     # We use the AutoModelWithHeads class here for better adapter support.
-    model = AutoModelWithHeads.from_pretrained(
-        model_args.model_name_or_path,
-        from_tf=bool(".ckpt" in model_args.model_name_or_path),
-        config=config,
-        cache_dir=model_args.cache_dir,
-    )
-    model.add_classification_head(
-        data_args.task_name or "glue",
-        num_labels=num_labels,
-        id2label={i: v for i, v in enumerate(label_list)} if num_labels > 0 else None,
-    )
+    # model = AutoModelWithHeads.from_pretrained(
+    #     model_args.model_name_or_path,
+    #     from_tf=bool(".ckpt" in model_args.model_name_or_path),
+    #     config=config,
+    #     cache_dir=model_args.cache_dir,
+    # )
+    # model.add_classification_head(
+    #     data_args.task_name or "glue",
+    #     num_labels=num_labels,
+    #     id2label={i: v for i, v in enumerate(label_list)} if num_labels > 0 else None,
+    # )
+    model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased")
 
     # Setup adapters
-    if adapter_args.train_adapter:
-        task_name = data_args.task_name or "glue"
-        # check if adapter already exists, otherwise add it
-        if task_name not in model.config.adapters.adapter_list(AdapterType.text_task):
-            # resolve the adapter config
-            adapter_config = AdapterConfig.load(
-                adapter_args.adapter_config,
-                non_linearity=adapter_args.adapter_non_linearity,
-                reduction_factor=adapter_args.adapter_reduction_factor,
-            )
-            # load a pre-trained from Hub if specified
-            if adapter_args.load_adapter:
-                model.load_adapter(
-                    adapter_args.load_adapter,
-                    AdapterType.text_task,
-                    config=adapter_config,
-                    load_as=task_name,
-                )
-            # otherwise, add a fresh adapter
-            else:
-                model.add_adapter(task_name, AdapterType.text_task, config=adapter_config)
-        # optionally load a pre-trained language adapter
-        if adapter_args.load_lang_adapter:
-            # resolve the language adapter config
-            lang_adapter_config = AdapterConfig.load(
-                adapter_args.lang_adapter_config,
-                non_linearity=adapter_args.lang_adapter_non_linearity,
-                reduction_factor=adapter_args.lang_adapter_reduction_factor,
-            )
-            # load the language adapter from Hub
-            lang_adapter_name = model.load_adapter(
-                adapter_args.load_lang_adapter,
-                AdapterType.text_lang,
-                config=lang_adapter_config,
-                load_as=adapter_args.language,
-            )
-        else:
-            lang_adapter_name = None
-        # Freeze all model weights except of those of this adapter
-        model.train_adapter([task_name])
-        # Set the adapters to be used in every forward pass
-        if lang_adapter_name:
-            model.set_active_adapters([lang_adapter_name, task_name])
-        else:
-            model.set_active_adapters([task_name])
+    task_name = data_args.task_name or "glue"
+    # check if adapter already exists, otherwise add it
+    if task_name not in model.config.adapters.adapter_list(AdapterType.text_task):
+        # resolve the adapter config
+        adapter_config = AdapterConfig.load(
+            adapter_args.adapter_config,
+            non_linearity=adapter_args.adapter_non_linearity,
+            reduction_factor=adapter_args.adapter_reduction_factor,
+        )
+        model.add_adapter(task_name, AdapterType.text_task, config=adapter_config)
+    lang_adapter_name = None
+    # Freeze all model weights except of those of this adapter
+    model.train_adapter([task_name])
+    # Set the adapters to be used in every forward pass
+    if lang_adapter_name:
+        model.set_active_adapters([lang_adapter_name, task_name])
     else:
-        if adapter_args.load_adapter or adapter_args.load_lang_adapter:
-            raise ValueError(
-                "Adapters can only be loaded in adapters training mode."
-                "Use --train_adapter to enable adapter training"
-            )
+        model.set_active_adapters([task_name])
 
     # Preprocessing the datasets
-    if data_args.task_name is not None:
-        sentence1_key, sentence2_key = task_to_keys[data_args.task_name]
-    else:
-        # Again, we try to have some nice defaults but don't hesitate to tweak to your use case.
-        non_label_column_names = [name for name in datasets["train"].column_names if name != "label"]
-        if "sentence1" in non_label_column_names and "sentence2" in non_label_column_names:
-            sentence1_key, sentence2_key = "sentence1", "sentence2"
-        else:
-            if len(non_label_column_names) >= 2:
-                sentence1_key, sentence2_key = non_label_column_names[:2]
-            else:
-                sentence1_key, sentence2_key = non_label_column_names[0], None
+    sentence1_key, sentence2_key = task_to_keys[data_args.task_name]
 
     # Padding strategy
     if data_args.pad_to_max_length:
@@ -275,25 +216,6 @@ def main():
         padding = False
         max_length = None
 
-    # Some models have set the order of the labels to use, so let's make sure we do use it.
-    label_to_id = None
-    if (
-        model.config.label2id != PretrainedConfig(num_labels=num_labels).label2id
-        and data_args.task_name is not None
-        and is_regression
-    ):
-        # Some have all caps in their config, some don't.
-        label_name_to_id = {k.lower(): v for k, v in model.config.label2id.items()}
-        if list(sorted(label_name_to_id.keys())) == list(sorted(label_list)):
-            label_to_id = {i: label_name_to_id[label_list[i]] for i in range(num_labels)}
-        else:
-            logger.warn(
-                "Your model seems to have been trained with labels, but they don't match the dataset: ",
-                f"model labels: {list(sorted(label_name_to_id.keys()))}, dataset labels: {list(sorted(label_list))}."
-                "\nIgnoring the model labels as a result.",
-            )
-    elif data_args.task_name is None:
-        label_to_id = {v: i for i, v in enumerate(label_list)}
 
     def preprocess_function(examples):
         # Tokenize the texts
@@ -301,10 +223,6 @@ def main():
             (examples[sentence1_key],) if sentence2_key is None else (examples[sentence1_key], examples[sentence2_key])
         )
         result = tokenizer(*args, padding=padding, max_length=max_length, truncation=True)
-
-        # Map labels to IDs (not necessary for GLUE tasks)
-        if label_to_id is not None and "label" in examples:
-            result["label"] = [label_to_id[l] for l in examples["label"]]
         return result
 
     datasets = datasets.map(preprocess_function, batched=True, load_from_cache_file=not data_args.overwrite_cache)
@@ -313,10 +231,6 @@ def main():
     eval_dataset = datasets["validation_matched" if data_args.task_name == "mnli" else "validation"]
     if data_args.task_name is not None:
         test_dataset = datasets["test_matched" if data_args.task_name == "mnli" else "test"]
-
-    # Log a few random samples from the training set:
-    for index in random.sample(range(len(train_dataset)), 3):
-        logger.info(f"Sample {index} of the training set: {train_dataset[index]}.")
 
     # Get the metric function
     if data_args.task_name is not None:
@@ -328,16 +242,12 @@ def main():
     # predictions and label_ids field) and has to return a dictionary string to float.
     def compute_metrics(p: EvalPrediction):
         preds = p.predictions[0] if isinstance(p.predictions, tuple) else p.predictions
-        preds = np.squeeze(preds) if is_regression else np.argmax(preds, axis=1)
+        preds = np.argmax(preds, axis=1)
         if data_args.task_name is not None:
             result = metric.compute(predictions=preds, references=p.label_ids)
             if len(result) > 1:
                 result["combined_score"] = np.mean(list(result.values())).item()
             return result
-        elif is_regression:
-            return {"mse": ((preds - p.label_ids) ** 2).mean().item()}
-        else:
-            return {"accuracy": (preds == p.label_ids).astype(np.float32).mean().item()}
 
     # Initialize our Trainer
     trainer = Trainer(
@@ -358,6 +268,8 @@ def main():
         trainer.train(
             model_path=model_args.model_name_or_path if os.path.isdir(model_args.model_name_or_path) else None
         )
+        print('?')
+        return
         trainer.save_model()  # Saves the tokenizer too for easy upload
 
     # Evaluation

@@ -2,8 +2,8 @@ import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AdapterType
 
 
-model = AutoModelForSequenceClassification.from_pretrained("bert-base-uncased")
-tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased")
+tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
 model.load_adapter("sentiment/sst-2@ukp")
 
