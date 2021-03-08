@@ -169,7 +169,7 @@ def main():
     #     cache_dir=model_args.cache_dir,
     #     use_fast=model_args.use_fast_tokenizer,
     # )
-    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
     # We use the AutoModelWithHeads class here for better adapter support.
     # model = AutoModelWithHeads.from_pretrained(
     #     model_args.model_name_or_path,
@@ -182,7 +182,7 @@ def main():
     #     num_labels=num_labels,
     #     id2label={i: v for i, v in enumerate(label_list)} if num_labels > 0 else None,
     # )
-    model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased")
+    model = AutoModelForSequenceClassification.from_pretrained("bert-base-uncased")
 
     # Setup adapters
     task_name = data_args.task_name or "glue"
@@ -268,8 +268,6 @@ def main():
         trainer.train(
             model_path=model_args.model_name_or_path if os.path.isdir(model_args.model_name_or_path) else None
         )
-        print('?')
-        return
         trainer.save_model()  # Saves the tokenizer too for easy upload
 
     # Evaluation
@@ -319,11 +317,8 @@ def main():
                     logger.info(f"***** Test results {task} *****")
                     writer.write("index\tprediction\n")
                     for index, item in enumerate(predictions):
-                        if is_regression:
-                            writer.write(f"{index}\t{item:3.3f}\n")
-                        else:
-                            item = label_list[item]
-                            writer.write(f"{index}\t{item}\n")
+                        item = label_list[item]
+                        writer.write(f"{index}\t{item}\n")
     return eval_results
 
 

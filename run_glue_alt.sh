@@ -1,7 +1,7 @@
 export GLUE_DIR=/home/hh239/GLUE-baselines/glue_data/
 export TASK_NAME=mrpc
 #export WANDB_PROJECT=distilbert
-export MODEL_NAME=distilbert-base-uncased
+export MODEL_NAME=bert-base-uncased
 
 
 python run_glue_alt.py \
@@ -16,8 +16,8 @@ python run_glue_alt.py \
   --num_train_epochs 20.0 \
   --output_dir ./output/$MODEL_NAME/$TASK_NAME/ \
   --overwrite_output_dir \
-  --train_adapter \
-  --adapter_config pfeiffer
+#  --train_adapter \
+#  --adapter_config pfeiffer
 
 
 # bert-base-uncased
