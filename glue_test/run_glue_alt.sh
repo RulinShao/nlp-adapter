@@ -1,5 +1,5 @@
 export GLUE_DIR=/home/hh239/GLUE-baselines/glue_data/
-export TASK_NAME=mrpc
+export TASK_NAME=sst2
 #export WANDB_PROJECT=distilbert
 export MODEL_NAME=bert-base-uncased
 
@@ -12,8 +12,8 @@ python run_glue_alt.py \
   --evaluate_during_training \
   --max_seq_length 126 \
   --per_device_train_batch_size 32 \
-  --learning_rate 1e-4 \
-  --num_train_epochs 20.0 \
+  --learning_rate 5e-5 \
+  --num_train_epochs 2.0 \
   --output_dir ./output/$MODEL_NAME/$TASK_NAME/ \
   --overwrite_output_dir \
 #  --train_adapter \
