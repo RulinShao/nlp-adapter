@@ -25,10 +25,10 @@ import torch.nn as nn
 from functools import partial
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from .helpers import load_pretrained
-from .layers import DropPath, to_2tuple, trunc_normal_
-from .resnet import resnet26d, resnet50d
-from .registry import register_model
+from timm.models.helpers import load_pretrained
+from timm.models.layers import DropPath, to_2tuple, trunc_normal_
+from timm.models.resnet import resnet26d, resnet50d
+from timm.models.registry import register_model
 
 
 def _cfg(url='', **kwargs):
