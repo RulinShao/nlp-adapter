@@ -1,21 +1,19 @@
+import math
+import logging
+import argparse
+from functools import partial
+from collections import OrderedDict
+
 import torch
 import torch.nn as nn
-from functools import partial
-import argparse
-import math
-from collections import OrderedDict
-from copy import deepcopy
-import logging
-
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from timm.models.helpers import load_pretrained
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
-from timm.models.resnet import resnet26d, resnet50d
-from timm.models.registry import register_model
-from timm.models import load_checkpoint, create_model
+from timm.models.registry import register_model, is_model, model_entrypoint
+from timm.models import create_model
+from timm.models.helpers import load_pretrained, load_checkpoint
 
-from .layers.weight_init import lecun_normal_
+from layers.weight_init import lecun_normal_
 
 
 _logger = logging.getLogger(__name__)
@@ -26,8 +24,6 @@ parser.add_argument('--data', default='/home/xc150/certify/discrete/smoothing-ma
                     help='path to dataset')
 parser.add_argument('--model_name', type=str, default='vit_small_patch16_224_adapter',
                     help='model name to load pre-trained model')
-parser.add_argument('--model_path', default='/home/hh239/rulin/pytorch-image-models/output/train/20210208-213645-vit_small_patch16_224-224/model_best.pth.tar',
-                    help='path to model checkpoint')
 
 parser.add_argument('--seed', default=310)
 parser.add_argument('--batch_size', default=128)
@@ -47,7 +43,6 @@ parser.add_argument('--best_acc1', default=0.)
 # Configurations for ViT
 def _cfg(path='', url='', **kwargs):
     return {
-        'path': path,
         'url': url,
         'num_classes': 1000, 'input_size': (3, 224, 224), 'pool_size': None,
         'crop_pct': .9, 'interpolation': 'bicubic',
@@ -59,14 +54,12 @@ def _cfg(path='', url='', **kwargs):
 default_cfgs = {
     # patch models (my experiments)
     'vit_small_patch16_224_adapter': _cfg(
-        path='/home/hh239/rulin/pytorch-image-models/output/train/20210208-213645-vit_small_patch16_224-224/model_best.pth.tar',
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/vit_small_p16_224-15ec54c9.pth',
         use_adapter=True,
     ),
 
     # patch models (weights ported from official Google JAX impl)
     'vit_base_patch16_224': _cfg(
-        path='/home/hh239/rulin/pytorch-image-models/output/train/20210217-200252-vit_base_patch16_224-224/model_best.pth.tar',
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_p16_224-80ecf9dd.pth',
         mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5),
     ),
@@ -340,6 +333,30 @@ def _conv_filter(state_dict, patch_size=16):
     return out_dict
 
 
+def create_model(
+        model_name,
+        pretrained=False,
+        num_classes=1000,
+        in_chans=3,
+        checkpoint_path='',
+        use_adapter=False,
+        **kwargs):
+
+    model_args = dict(pretrained=pretrained, num_classes=num_classes, in_chans=in_chans)
+
+    kwargs = {k: v for k, v in kwargs.items() if v is not None}
+
+    if is_model(model_name):
+        create_fn = model_entrypoint(model_name)
+        model = create_fn(**model_args, **kwargs)
+    else:
+        raise RuntimeError('Unknown model (%s)' % model_name)
+
+    if checkpoint_path:
+        load_checkpoint(model, checkpoint_path, strict=(not use_adapter))
+
+    return model
+
 
 @register_model
 def vit_small_patch16_224_adapter(pretrained=False, **kwargs):
@@ -349,11 +366,8 @@ def vit_small_patch16_224_adapter(pretrained=False, **kwargs):
     model.default_cfg = default_cfgs['vit_small_patch16_224_adapter']
     if pretrained:
         load_pretrained(
-            model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 3), filter_fn=_conv_filter)
+            model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 3), filter_fn=_conv_filter, strict=False)
     return model
-
-
-
 
 
 def main():
@@ -364,7 +378,14 @@ def main():
                          pretrained=True,
                          num_classes=1000,
                          in_chans=3,)
-    load_checkpoint(model, args.model_path, True)
     model.eval().to(device)
 
+"""
+Set only adapters and norm trainable:
+optimizer = optim.Adam([{'params':[ param for name, param in model.named_parameters() if 'adapter' in name or 'norm' in name]}], lr=0.1)
+"""
+
+
+if __name__ == '__main__':
+    main()
 
