@@ -67,6 +67,7 @@ default_cfgs = {
 
 
 class BasicAdapter(nn.Module):
+    # TODO: set specific hidden_features
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU):
         super().__init__()
         out_features = out_features or in_features
@@ -293,6 +294,7 @@ def _init_vit_weights(m, n: str = '', head_bias: float = 0., jax_impl: bool = Fa
     * When called without n, head_bias, jax_impl args it will behave exactly the same
       as my original init for compatibility with prev hparam / downstream use cases (ie DeiT).
     * When called w/ valid n (module name) and jax_impl=True, will (hopefully) match JAX impl
+    TODO: initialize adapter parameters to near zeros
     """
     if isinstance(m, nn.Linear):
         if n.startswith('head'):
