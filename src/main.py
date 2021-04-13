@@ -25,9 +25,10 @@ parser.add_argument('--model_name', type=str, default='vit_small_patch16_224_ada
 parser.add_argument('--model_path', default='',
                     help='path to model checkpoint')
 
+parser.add_argument('--do_train', default=True)
 parser.add_argument('--seed', default=310)
-parser.add_argument('--batch_size', default=128)
-parser.add_argument('--lr', default=0.1)
+parser.add_argument('--batch_size', default=64)
+parser.add_argument('--lr', default=0.01)
 parser.add_argument('--momentum', default=0.9)
 parser.add_argument('--weight_decay', default=0.)
 parser.add_argument('--workers', default=0)
@@ -37,6 +38,7 @@ parser.add_argument('--distributed', default=False)
 parser.add_argument('--gpu', default=0)
 parser.add_argument('--print_freq', default=10)
 parser.add_argument('--steps', default=20000)
+parser.add_argument('--use_adapter', default=True)
 
 best_acc1 = 0
 
@@ -61,68 +63,77 @@ def main():
                                  in_chans=3,)
     model.eval().to(device)
 
+    # Set adapters and norm layers trainable while other backbone fixed
+    if args.use_adapter:
+        model.set_adapter()
+
     # Fine-tune the model on ImageNet
     seed_everything(args.seed)
 
     criterion = nn.CrossEntropyLoss().to(device)
 
-    optimizer = torch.optim.SGD(model.parameters(), args.lr,
-                                momentum=args.momentum,
-                                weight_decay=args.weight_decay)
+    if args.do_train:
+        # optimizer = torch.optim.SGD(model.parameters(), args.lr,
+        #                             momentum=args.momentum,
+        #                             weight_decay=args.weight_decay)
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
+                                     lr=args.lr,
+                                     weight_decay=args.weight_decay,
+                                     betas=[0.9, 0.999])
 
-    traindir = os.path.join(args.data, 'train')
-    valdir = os.path.join(args.data, 'val')
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
+        traindir = os.path.join(args.data, 'train')
+        valdir = os.path.join(args.data, 'val')
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                         std=[0.229, 0.224, 0.225])
 
-    train_dataset = datasets.ImageFolder(
-        traindir,
-        transforms.Compose([
-            transforms.RandomResizedCrop(224),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            normalize,
-        ]))
+        train_dataset = datasets.ImageFolder(
+            traindir,
+            transforms.Compose([
+                transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                normalize,
+            ]))
 
-    train_sampler = None
+        train_sampler = None
 
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
-        num_workers=args.workers, pin_memory=True, sampler=train_sampler)
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
+            num_workers=args.workers, pin_memory=True, sampler=train_sampler)
 
-    print(train_loader)
-    val_loader = torch.utils.data.DataLoader(
-        datasets.ImageFolder(valdir, transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            normalize,
-        ])),
-        batch_size=args.batch_size, shuffle=False,
-        num_workers=args.workers, pin_memory=True)
+        print(train_loader)
+        val_loader = torch.utils.data.DataLoader(
+            datasets.ImageFolder(valdir, transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                normalize,
+            ])),
+            batch_size=args.batch_size, shuffle=False,
+            num_workers=args.workers, pin_memory=True)
 
-    for epoch in range(args.start_epoch, args.epochs):
-        if args.distributed:
-            train_sampler.set_epoch(epoch)
-        adjust_learning_rate(optimizer, epoch, args)
+        for epoch in range(args.start_epoch, args.epochs):
+            if args.distributed:
+                train_sampler.set_epoch(epoch)
+            adjust_learning_rate(optimizer, epoch, args)
 
-        # train for one epoch
-        train(train_loader, model, criterion, optimizer, epoch, args)
+            # train for one epoch
+            train(train_loader, model, criterion, optimizer, epoch, args)
 
-        # evaluate on validation set
-        acc1 = validate(val_loader, model, criterion, args)
+            # evaluate on validation set
+            acc1 = validate(val_loader, model, criterion, args)
 
-        # remember best acc@1 and save checkpoint
-        is_best = acc1 > best_acc1
-        best_acc1 = max(acc1, best_acc1)
+            # remember best acc@1 and save checkpoint
+            is_best = acc1 > best_acc1
+            best_acc1 = max(acc1, best_acc1)
 
-        save_checkpoint({
-            'epoch': epoch + 1,
-            'arch': args.model_name,
-            'state_dict': model.state_dict(),
-            'best_acc1': best_acc1,
-            'optimizer': optimizer.state_dict(),
-        }, is_best)
+            save_checkpoint({
+                'epoch': epoch + 1,
+                'arch': args.model_name,
+                'state_dict': model.state_dict(),
+                'best_acc1': best_acc1,
+                'optimizer': optimizer.state_dict(),
+            }, is_best)
 
 
 def train(train_loader, model, criterion, optimizer, epoch, args):

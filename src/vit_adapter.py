@@ -53,17 +53,22 @@ default_cfgs = {
 
 
 class BasicAdapter(nn.Module):
-    # TODO: set specific hidden_features
+    # TODO: set specific hidden_features. (Now it's identical to in_features.)
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
         self.down_proj = nn.Linear(in_features, hidden_features)
-        self.act = act_layer
+        self.act = act_layer()
         self.up_proj = nn.Linear(hidden_features, out_features)
 
-    def forward(self, x, residual):
-        x = x + self.up_proj(self.activate(self.down_proj(x)))
+    def forward(self, x):
+        # res = x
+        # x = self.down_proj(x)
+        # x = self.act(x)
+        # x = self.up_proj(x)
+        # x = res + x
+        x = x + self.up_proj(self.act(self.down_proj(x)))
         return x
 
 
@@ -249,6 +254,13 @@ class VisionTransformer(nn.Module):
         # this fn left here for compat with downstream users
         _init_vit_weights(m)
 
+    def set_adapter(self):
+        for name, param in self.named_parameters():
+            if 'adapter' in name or 'norm' in name:
+                param.requires_grad = True
+            else:
+                param.requires_grad = False
+
     @torch.jit.ignore
     def no_weight_decay(self):
         return {'pos_embed', 'cls_token'}
@@ -280,7 +292,7 @@ def _init_vit_weights(m, n: str = '', head_bias: float = 0., jax_impl: bool = Fa
     * When called without n, head_bias, jax_impl args it will behave exactly the same
       as my original init for compatibility with prev hparam / downstream use cases (ie DeiT).
     * When called w/ valid n (module name) and jax_impl=True, will (hopefully) match JAX impl
-    TODO: initialize adapter parameters to near zeros
+    TODO: initialize adapter parameters to near zeros. (Maybe just set smaller std for adapter init)
     """
     if isinstance(m, nn.Linear):
         if n.startswith('head'):
@@ -370,7 +382,17 @@ def main():
 
 """
 Set only adapters and norm trainable:
+
+1.
 optimizer = optim.Adam([{'params':[ param for name, param in model.named_parameters() if 'adapter' in name or 'norm' in name]}], lr=0.1)
+
+2.
+for name, param in model.named_parameters():
+    if 'adapter' in name or 'norm' in name:
+        param.requires_grad = True
+    else:
+        param.requires_grad = False
+optimizer = optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=0.1)
 """
 
 
