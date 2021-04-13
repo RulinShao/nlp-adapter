@@ -25,20 +25,6 @@ parser.add_argument('--data', default='/home/xc150/certify/discrete/smoothing-ma
 parser.add_argument('--model_name', type=str, default='vit_small_patch16_224_adapter',
                     help='model name to load pre-trained model')
 
-parser.add_argument('--seed', default=310)
-parser.add_argument('--batch_size', default=128)
-parser.add_argument('--lr', default=0.1)
-parser.add_argument('--momentum', default=0.9)
-parser.add_argument('--weight_decay', default=0.)
-parser.add_argument('--workers', default=0)
-parser.add_argument('--start_epoch', default=0)
-parser.add_argument('--epochs', default=100)
-parser.add_argument('--distributed', default=False)
-parser.add_argument('--gpu', default=0)
-parser.add_argument('--print_freq', default=10)
-parser.add_argument('--steps', default=20000)
-parser.add_argument('--best_acc1', default=0.)
-
 
 # Configurations for ViT
 def _cfg(path='', url='', **kwargs):
