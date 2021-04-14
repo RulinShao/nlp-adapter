@@ -29,7 +29,7 @@ parser.add_argument('--model_path', default='',
 
 parser.add_argument('--do_train', default=True)
 parser.add_argument('--seed', default=310)
-parser.add_argument('--batch_size', default=64)
+parser.add_argument('--batch_size', default=256)
 parser.add_argument('--lr', default=0.01)
 parser.add_argument('--momentum', default=0.9)
 parser.add_argument('--weight_decay', default=0.)
@@ -64,7 +64,7 @@ def seed_everything(seed):
 def main():
     args = parser.parse_args()
 
-    dist.init_process_group(backend='nccl', init_method=args.dist_url, rank=args.rank, world_size=args.world_size)
+    # dist.init_process_group(backend='nccl', init_method=args.dist_url, rank=args.rank, world_size=args.world_size)
 
     # Load model
     model = create_model(args.model_name,
@@ -72,11 +72,12 @@ def main():
                                  num_classes=1000,
                                  in_chans=3,)
     model.eval().to(device)
-    model = torch.nn.parallel.DistributedDataParallel(model)
+    # model = torch.nn.parallel.DistributedDataParallel(model)
+    model = nn.DataParallel(model).eval()
 
     # Set adapters and norm layers trainable while other backbone fixed
     if args.use_adapter:
-        model.set_adapter()
+        model.module.set_adapter()
 
     # Fine-tune the model on ImageNet
     seed_everything(args.seed)
@@ -106,8 +107,8 @@ def main():
                 normalize,
             ]))
 
-        # train_sampler = None
-        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+        train_sampler = None
+        # train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
 
         train_loader = torch.utils.data.DataLoader(
             train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
