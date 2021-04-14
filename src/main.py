@@ -8,6 +8,8 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
+import torch.distributed as dist
+import torch.utils.data.distributed
 
 from timm.models import load_checkpoint, create_model
 
@@ -38,6 +40,12 @@ parser.add_argument('--distributed', default=False)
 parser.add_argument('--gpu', default=0)
 parser.add_argument('--print_freq', default=10)
 parser.add_argument('--steps', default=20000)
+parser.add_argument('--world-size', default=2, type=int,
+                    help='number of nodes for distributed training')
+parser.add_argument('--rank', default=0, type=int,
+                    help='node rank for distributed training')
+parser.add_argument('--dist_url', default='tcp://224.66.41.62:23456', type=str,
+                    help='url used to set up distributed training')
 parser.add_argument('--use_adapter', default=True)
 
 best_acc1 = 0
@@ -56,12 +64,15 @@ def seed_everything(seed):
 def main():
     args = parser.parse_args()
 
+    dist.init_process_group(backend='nccl', init_method=args.dist_url, rank=args.rank, world_size=args.world_size)
+
     # Load model
     model = create_model(args.model_name,
                                  pretrained=True,
                                  num_classes=1000,
                                  in_chans=3,)
     model.eval().to(device)
+    model = torch.nn.parallel.DistributedDataParallel(model)
 
     # Set adapters and norm layers trainable while other backbone fixed
     if args.use_adapter:
@@ -95,13 +106,13 @@ def main():
                 normalize,
             ]))
 
-        train_sampler = None
+        # train_sampler = None
+        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
 
         train_loader = torch.utils.data.DataLoader(
             train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
             num_workers=args.workers, pin_memory=True, sampler=train_sampler)
 
-        print(train_loader)
         val_loader = torch.utils.data.DataLoader(
             datasets.ImageFolder(valdir, transforms.Compose([
                 transforms.Resize(256),
