@@ -25,7 +25,9 @@ parser.add_argument('--data', default='/home/xc150/certify/discrete/smoothing-ma
 parser.add_argument('--model_name', type=str, default='vit_small_patch16_224_adapter',
                     help='model name to load pre-trained model')
 parser.add_argument('--model_path', default='',
-                    help='path to model checkpoint')
+                    help='path to load model checkpoint')
+parser.add_argument('--model_save_dir', default='',
+                    help='dir to save model')
 
 parser.add_argument('--do_train', default=True)
 parser.add_argument('--seed', default=310)
@@ -47,8 +49,6 @@ parser.add_argument('--rank', default=0, type=int,
 parser.add_argument('--dist_url', default='tcp://224.66.41.62:23456', type=str,
                     help='url used to set up distributed training')
 parser.add_argument('--use_adapter', default=True)
-
-best_acc1 = 0
 
 
 def seed_everything(seed):
@@ -124,6 +124,8 @@ def main():
             batch_size=args.batch_size, shuffle=False,
             num_workers=args.workers, pin_memory=True)
 
+        best_acc1 = 0.
+
         for epoch in range(args.start_epoch, args.epochs):
             if args.distributed:
                 train_sampler.set_epoch(epoch)
@@ -145,7 +147,7 @@ def main():
                 'state_dict': model.state_dict(),
                 'best_acc1': best_acc1,
                 'optimizer': optimizer.state_dict(),
-            }, is_best)
+            }, is_best, model_dir=args.model_save_dir)
 
 
 def train(train_loader, model, criterion, optimizer, epoch, args):
@@ -240,7 +242,8 @@ def validate(val_loader, model, criterion, args):
     return top1.avg
 
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
+def save_checkpoint(state, is_best, model_dir='', filename='checkpoint.pth.tar'):
+    os.path.join(model_dir, filename)
     torch.save(state, filename)
     if is_best:
         shutil.copyfile(filename, 'model_best.pth.tar')
