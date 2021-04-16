@@ -26,18 +26,21 @@ parser.add_argument('--model_name', type=str, default='vit_small_patch16_224_ada
                     help='model name to load pre-trained model')
 parser.add_argument('--model_path', default='',
                     help='path to load model checkpoint')
-parser.add_argument('--model_save_dir', default='',
+parser.add_argument('--model_save_dir', default='checkpoint/',
                     help='dir to save model')
+parser.add_argument('--use_adapter', default=True)
 
 parser.add_argument('--do_train', default=True)
+parser.add_argument('--do_eval', default=False)
 parser.add_argument('--seed', default=310)
-parser.add_argument('--batch_size', default=256)
-parser.add_argument('--lr', default=0.01)
+parser.add_argument('--batch_size', default=128)
+parser.add_argument('--lr', default=0.1)
 parser.add_argument('--momentum', default=0.9)
 parser.add_argument('--weight_decay', default=0.)
 parser.add_argument('--workers', default=0)
 parser.add_argument('--start_epoch', default=0)
 parser.add_argument('--epochs', default=100)
+
 parser.add_argument('--distributed', default=False)
 parser.add_argument('--gpu', default=0)
 parser.add_argument('--print_freq', default=10)
@@ -48,7 +51,6 @@ parser.add_argument('--rank', default=0, type=int,
                     help='node rank for distributed training')
 parser.add_argument('--dist_url', default='tcp://224.66.41.62:23456', type=str,
                     help='url used to set up distributed training')
-parser.add_argument('--use_adapter', default=True)
 
 
 def seed_everything(seed):
@@ -64,34 +66,66 @@ def seed_everything(seed):
 def main():
     args = parser.parse_args()
 
+    if args.model_save_dir and not os.path.exists(args.model_save_dir):
+        os.makedirs(args.model_save_dir)
+
     # dist.init_process_group(backend='nccl', init_method=args.dist_url, rank=args.rank, world_size=args.world_size)
 
     # Load model
     model = create_model(args.model_name,
                                  pretrained=True,
                                  num_classes=1000,
-                                 in_chans=3,)
-    model.eval().to(device)
-    # model = torch.nn.parallel.DistributedDataParallel(model)
-    model = nn.DataParallel(model).eval()
+                                 in_chans=3,).to(device)
 
-    # Set adapters and norm layers trainable while other backbone fixed
-    if args.use_adapter:
-        model.module.set_adapter()
+
 
     # Fine-tune the model on ImageNet
     seed_everything(args.seed)
 
     criterion = nn.CrossEntropyLoss().to(device)
 
+    if args.do_eval:
+        # Set adapters and norm layers trainable while other backbone fixed
+        if args.use_adapter:
+            model.set_adapter()
+
+        if args.seed:
+            seed_everything(args.seed)
+
+        valdir = os.path.join(args.data, 'val')
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                         std=[0.229, 0.224, 0.225])
+        val_loader = torch.utils.data.DataLoader(
+            datasets.ImageFolder(valdir, transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                normalize,
+            ])),
+            batch_size=args.batch_size, shuffle=False,
+            num_workers=args.workers, pin_memory=True)
+
+        validate(val_loader, model, criterion, args)
+
     if args.do_train:
-        # optimizer = torch.optim.SGD(model.parameters(), args.lr,
-        #                             momentum=args.momentum,
-        #                             weight_decay=args.weight_decay)
-        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
-                                     lr=args.lr,
-                                     weight_decay=args.weight_decay,
-                                     betas=[0.9, 0.999])
+        if args.distributed:
+            # model = torch.nn.parallel.DistributedDataParallel(model)
+            model = nn.DataParallel(model)
+
+        # Set adapters and norm layers trainable while other backbone fixed
+        if args.use_adapter:
+            if args.distributed:
+                model.module.set_adapter()
+            else:
+                model.set_adapter()
+
+        optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), args.lr,
+                                    momentum=args.momentum,
+                                    weight_decay=args.weight_decay)
+        # optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
+        #                              lr=args.lr,
+        #                              weight_decay=args.weight_decay,
+        #                              betas=[0.9, 0.999])
 
         traindir = os.path.join(args.data, 'train')
         valdir = os.path.join(args.data, 'val')
