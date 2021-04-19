@@ -14,13 +14,13 @@ import torch.utils.data.distributed
 from timm.models import load_checkpoint, create_model
 
 # Register self-defined models
-import vit_adapter
+import models.vit
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
-parser.add_argument('--data', default='/home/ec2-user/imagenet',
+parser.add_argument('--data', default='/home/xc150/certify/discrete/smoothing-master',
                     help='path to dataset')
 parser.add_argument('--model_name', type=str, default='vit_small_patch16_224_adapter',
                     help='model name to load pre-trained model')
