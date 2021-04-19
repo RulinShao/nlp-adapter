@@ -24,20 +24,21 @@ parser.add_argument('--data', default='/home/xc150/certify/discrete/smoothing-ma
                     help='path to dataset')
 parser.add_argument('--model_name', type=str, default='vit_small_patch16_224_adapter',
                     help='model name to load pre-trained model')
-parser.add_argument('--model_path', default='',
+parser.add_argument('--load_from_path', default=False)
+parser.add_argument('--model_path', default='/home/hh239/rulin/nlp-adapter/src/model_best.pth.tar',
                     help='path to load model checkpoint')
 parser.add_argument('--model_save_dir', default='checkpoint/',
                     help='dir to save model')
-parser.add_argument('--use_adapter', default=True)
+parser.add_argument('--use_adapter', default=False)
 
-parser.add_argument('--do_train', default=True)
-parser.add_argument('--do_eval', default=False)
+parser.add_argument('--do_train', default=False)
+parser.add_argument('--do_eval', default=True)
 parser.add_argument('--seed', default=310)
 parser.add_argument('--batch_size', default=128)
 parser.add_argument('--lr', default=0.1)
 parser.add_argument('--momentum', default=0.9)
 parser.add_argument('--weight_decay', default=0.)
-parser.add_argument('--workers', default=0)
+parser.add_argument('--workers', default=2)
 parser.add_argument('--start_epoch', default=0)
 parser.add_argument('--epochs', default=100)
 
