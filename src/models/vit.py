@@ -256,14 +256,17 @@ class VisionTransformer(nn.Module):
         self.num_classes = num_classes
         self.head = nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
 
-    def set_adapter(self, new_head=None):
+    def set_adapter(self, new_head=None, only_adapter=True):
         # Set adapter and norm layers trainable.
         # Reset the head layer when dimension of new head is given
         for name, param in self.named_parameters():
             if 'adapter' in name or 'norm' in name:
                 param.requires_grad = True
             else:
-                param.requires_grad = False
+                if only_adapter:
+                    param.requires_grad = False
+                else:
+                    param.requires_grad = True
         if new_head:
             self.reset_classifier(new_head)
             self.head.requires_grad = True

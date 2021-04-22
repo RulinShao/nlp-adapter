@@ -61,9 +61,9 @@ def main():
     # Change classifier head dimension and set adapter&norm&head trainable.
     task_length = 1000 // args.num_tasks
     if hasattr(model, "module"):
-        model.module.set_adapter(new_head=task_length)
+        model.module.set_adapter(new_head=task_length, only_adapter=args.only_adapter)
     else:
-        model.set_adapter(new_head=task_length)
+        model.set_adapter(new_head=task_length, only_adapter=args.only_adapter)
 
     # Put the model on the GPU,
     model = utils.set_gpu(model)

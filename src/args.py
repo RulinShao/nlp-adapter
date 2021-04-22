@@ -17,6 +17,9 @@ def parse_arguments():
         "--model_name", type=str, default="vit_small_patch16_224_adapter", help="timm model name"
     )
     parser.add_argument(
+        "--only-adapter", type=bool, default="False", help="whether only train adapters"
+    )
+    parser.add_argument(
         "--optimizer", type=str, default="adam", help="Which optimizer to use"
     )
     parser.add_argument(
