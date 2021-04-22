@@ -17,7 +17,7 @@ def parse_arguments():
         "--model_name", type=str, default="vit_small_patch16_224_adapter", help="timm model name"
     )
     parser.add_argument(
-        "--only-adapter", type=bool, default="False", help="whether only train adapters"
+        "--only_adapter", type=bool, default=False, help="whether only train adapters"
     )
     parser.add_argument(
         "--optimizer", type=str, default="adam", help="Which optimizer to use"
@@ -25,7 +25,7 @@ def parse_arguments():
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=256,
+        default=128,
         metavar="N",
         help="input batch size for training (default: 64)",
     )
