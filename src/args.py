@@ -14,22 +14,25 @@ def parse_arguments():
         "--config", type=str, default=None, help="Config file to use, YAML format"
     )
     parser.add_argument(
-        "--optimizer", type=str, default="sgd", help="Which optimizer to use"
+        "--model_name", type=str, default="vit_small_patch16_224_adapter", help="timm model name"
+    )
+    parser.add_argument(
+        "--optimizer", type=str, default="adam", help="Which optimizer to use"
     )
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=128,
+        default=256,
         metavar="N",
         help="input batch size for training (default: 64)",
     )
-    parser.add_argument(
-        "--test-batch-size",
-        type=int,
-        default=128,
-        metavar="N",
-        help="input batch size for testing (default: 128)",
-    )
+    # parser.add_argument(
+    #     "--test-batch-size",
+    #     type=int,
+    #     default=256,
+    #     metavar="N",
+    #     help="input batch size for testing (default: 128)",
+    # )
     parser.add_argument(
         "--epochs",
         type=int,
@@ -43,6 +46,12 @@ def parse_arguments():
         default=0.1,
         metavar="LR",
         help="learning rate (default: 0.1)",
+    )
+    parser.add_argument(
+        "--lr_policy", type=str, default="cosine_lr", help="lr policy"
+    )
+    parser.add_argument(
+        "--warmup_length", type=int, default=0, help="warm up length"
     )
     parser.add_argument(
         "--momentum",
@@ -70,18 +79,9 @@ def parse_arguments():
         help="how many batches to wait before logging training status",
     )
     parser.add_argument("--workers", type=int, default=4, help="how many cpu workers")
-    parser.add_argument(
-        "--output-size",
-        type=int,
-        default=10,
-        help="how many total neurons in last layer",
-    )
-    parser.add_argument(
-        "--real-neurons", type=int, default=10, help="how many real neurons"
-    )
     parser.add_argument("--name", type=str, default="default", help="Experiment id.")
     parser.add_argument(
-        "--data", type=str, help="Location to store data",
+        "--data", type=str, default='/home/xc150/certify/discrete/smoothing-master', help="Location to store data",
     )
     parser.add_argument(
         "--log-dir",
@@ -92,7 +92,7 @@ def parse_arguments():
     parser.add_argument("--model", type=str, help="Type of model.")
     parser.add_argument(
         "--multigpu",
-        default=None,
+        default="0,1",
         type=lambda x: [int(a) for a in x.split(",")],
         help="Which GPUs to use for multigpu training",
     )
@@ -104,16 +104,11 @@ def parse_arguments():
     )
     parser.add_argument(
         "--num-tasks",
-        default=None,
+        default=10,
         type=int,
         help="Number of tasks, None if no adaptation is necessary",
     )
-    parser.add_argument(
-        "--adaptor",
-        default="gt",
-        help="Which adaptor to use, see adaptors.py",
-    )
-    parser.add_argument("--set", type=str, default='splitimagenet', help="Which dataset to use")
+    parser.add_argument("--set", type=str, default='SplitImageNet', help="Which dataset to use")
     parser.add_argument(
         "--save", action="store_true", default=True, help="save checkpoints"
     )

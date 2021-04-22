@@ -15,6 +15,7 @@ import schedulers
 import trainers
 import utils
 
+
 from timm.models import load_checkpoint, create_model
 import models.vit
 
@@ -57,12 +58,15 @@ def main():
                          num_classes=1000,
                          in_chans=3, )
 
-    # Put the model on the GPU,
-    model = utils.set_gpu(model)
-
     # Change classifier head dimension and set adapter&norm&head trainable.
     task_length = 1000 // args.num_tasks
-    model.set_adapter(new_head=task_length)
+    if hasattr(model, "module"):
+        model.module.set_adapter(new_head=task_length)
+    else:
+        model.set_adapter(new_head=task_length)
+
+    # Put the model on the GPU,
+    model = utils.set_gpu(model)
 
     # Optionally resume from a checkpoint.
     if args.resume:

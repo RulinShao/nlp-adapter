@@ -18,7 +18,7 @@ class SplitImageNet:
     def __init__(self):
         super(SplitImageNet, self).__init__()
 
-        data_root = os.path.join(args.data, "imagenet")
+        data_root = os.path.join(args.data, '')
 
         use_cuda = torch.cuda.is_available()
 
