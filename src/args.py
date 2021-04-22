@@ -113,7 +113,7 @@ def parse_arguments():
         default="gt",
         help="Which adaptor to use, see adaptors.py",
     )
-    parser.add_argument("--set", type=str, help="Which dataset to use")
+    parser.add_argument("--set", type=str, default='splitimagenet', help="Which dataset to use")
     parser.add_argument(
         "--save", action="store_true", default=True, help="save checkpoints"
     )
@@ -123,7 +123,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--task-eval",
-        default=None,
+        default=0,
         type=int,
         help="Only evaluate on this task (for memory efficiency and grounded task info",
     )

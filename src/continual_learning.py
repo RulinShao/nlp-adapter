@@ -9,12 +9,14 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.tensorboard import SummaryWriter
 
 from args import args
-import adaptors
+# import adaptors
 import data
 import schedulers
 import trainers
 import utils
 
+from timm.models import load_checkpoint, create_model
+import models.vit
 
 def main():
     if args.seed is not None:
@@ -49,10 +51,18 @@ def main():
         adapt_acc1 = [0.0 for _ in range(args.num_tasks)]
 
     # Get the model.
-    model = utils.get_model()
+    # TODO: set the model output dimension for cl tasks
+    model = create_model(args.model_name,
+                         pretrained=True,
+                         num_classes=1000,
+                         in_chans=3, )
 
     # Put the model on the GPU,
     model = utils.set_gpu(model)
+
+    # Change classifier head dimension and set adapter&norm&head trainable.
+    task_length = 1000 // args.num_tasks
+    model.set_adapter(new_head=task_length)
 
     # Optionally resume from a checkpoint.
     if args.resume:

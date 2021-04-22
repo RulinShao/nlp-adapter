@@ -20,8 +20,6 @@ _logger = logging.getLogger(__name__)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 parser = argparse.ArgumentParser(description='ViT ImageNet Training')
-parser.add_argument('--data', default='/home/xc150/certify/discrete/smoothing-master',
-                    help='path to dataset')
 parser.add_argument('--model_name', type=str, default='vit_small_patch16_224_adapter',
                     help='model name to load pre-trained model')
 
@@ -38,10 +36,9 @@ def _cfg(path='', url='', **kwargs):
     }
 
 default_cfgs = {
-    # patch models (my experiments)
-    'vit_small_patch16_224_adapter': _cfg(
+    # patch models (weights ported from timm impl)
+    'vit_small_patch16_224': _cfg(
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/vit_small_p16_224-15ec54c9.pth',
-        use_adapter=True,
     ),
 
     # patch models (weights ported from official Google JAX impl)
@@ -53,21 +50,15 @@ default_cfgs = {
 
 
 class BasicAdapter(nn.Module):
-    # TODO: set specific hidden_features. (Now it's identical to in_features.)
-    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU):
+    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.ReLU):
         super().__init__()
         out_features = out_features or in_features
-        hidden_features = hidden_features or in_features
+        hidden_features = hidden_features or in_features // 2
         self.down_proj = nn.Linear(in_features, hidden_features)
         self.act = act_layer()
         self.up_proj = nn.Linear(hidden_features, out_features)
 
     def forward(self, x):
-        # res = x
-        # x = self.down_proj(x)
-        # x = self.act(x)
-        # x = self.up_proj(x)
-        # x = res + x
         x = x + self.up_proj(self.act(self.down_proj(x)))
         return x
 
@@ -176,7 +167,7 @@ class VisionTransformer(nn.Module):
     """
 
     def __init__(self, img_size=224, patch_size=16, in_chans=3, num_classes=1000, embed_dim=768, depth=12,
-                 num_heads=12, mlp_ratio=4., qkv_bias=True, qk_scale=None, representation_size=None, add_adapter=False,
+                 num_heads=12, mlp_ratio=4., qkv_bias=True, qk_scale=None, representation_size=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0., embed_layer=PatchEmbed, norm_layer=None,
                  act_layer=None, weight_init='', use_adapter=False):
         """
@@ -254,13 +245,6 @@ class VisionTransformer(nn.Module):
         # this fn left here for compat with downstream users
         _init_vit_weights(m)
 
-    def set_adapter(self):
-        for name, param in self.named_parameters():
-            if 'adapter' in name or 'norm' in name:
-                param.requires_grad = True
-            else:
-                param.requires_grad = False
-
     @torch.jit.ignore
     def no_weight_decay(self):
         return {'pos_embed', 'cls_token'}
@@ -268,9 +252,21 @@ class VisionTransformer(nn.Module):
     def get_classifier(self):
         return self.head
 
-    def reset_classifier(self, num_classes, global_pool=''):
+    def reset_classifier(self, num_classes):
         self.num_classes = num_classes
         self.head = nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+
+    def set_adapter(self, new_head=None):
+        # Set adapter and norm layers trainable.
+        # Reset the head layer when dimension of new head is given
+        for name, param in self.named_parameters():
+            if 'adapter' in name or 'norm' in name:
+                param.requires_grad = True
+            else:
+                param.requires_grad = False
+        if new_head:
+            self.reset_classifier(new_head)
+            self.head.requires_grad = True
 
     def forward_features(self, x):
         x = self.patch_embed(x)
@@ -363,7 +359,7 @@ def vit_small_patch16_224_adapter(pretrained=False, **kwargs):
     if pretrained:
         kwargs.setdefault('qk_scale', 768 ** -0.5)
     model = VisionTransformer(patch_size=16, embed_dim=768, depth=8, num_heads=8, mlp_ratio=3., use_adapter=True, **kwargs)
-    model.default_cfg = default_cfgs['vit_small_patch16_224_adapter']
+    model.default_cfg = default_cfgs['vit_small_patch16_224']
     if pretrained:
         load_pretrained(
             model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 3), filter_fn=_conv_filter, strict=False)

@@ -63,6 +63,7 @@ class SplitImageNet:
 
         self.train_loaders = []
         self.val_loaders = []
+        # self.task_length = 1000 // args.num_tasks
 
         for td, vd in zip(train_datasets, val_datasets):
             self.train_loaders.append(
@@ -94,6 +95,7 @@ class SplitImageNet:
 
     def _split_dataset(self, dataset, class_split_order):
         task_length = len(class_split_order) // args.num_tasks
+        # assert task_length == self.task_length
 
         # Used to map from random task_length classes in {0...1000} -> {0,1...task_length}
         tiled_class_map = np.tile(np.arange(task_length), args.num_tasks)
