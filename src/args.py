@@ -17,7 +17,10 @@ def parse_arguments():
         "--model_name", type=str, default="vit_small_patch16_224_adapter", help="timm model name"
     )
     parser.add_argument(
-        "--only_adapter", type=bool, default=False, help="whether only train adapters"
+        "--train_adapter", type=bool, default=False, help="Train the adapter and norm layers only"
+    )
+    parser.add_argument(
+        "--train_head", type=bool, default=True, help="Train the head layer only"
     )
     parser.add_argument(
         "--optimizer", type=str, default="adam", help="Which optimizer to use"
@@ -29,13 +32,6 @@ def parse_arguments():
         metavar="N",
         help="input batch size for training (default: 64)",
     )
-    # parser.add_argument(
-    #     "--test-batch-size",
-    #     type=int,
-    #     default=256,
-    #     metavar="N",
-    #     help="input batch size for testing (default: 128)",
-    # )
     parser.add_argument(
         "--epochs",
         type=int,
@@ -46,7 +42,7 @@ def parse_arguments():
     parser.add_argument(
         "--lr",
         type=float,
-        default=0.1,
+        default=0.0005,
         metavar="LR",
         help="learning rate (default: 0.1)",
     )
@@ -54,7 +50,7 @@ def parse_arguments():
         "--lr_policy", type=str, default="cosine_lr", help="lr policy"
     )
     parser.add_argument(
-        "--warmup_length", type=int, default=0, help="warm up length"
+        "--warmup_length", type=int, default=5, help="warm up length"
     )
     parser.add_argument(
         "--momentum",

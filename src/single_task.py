@@ -1,3 +1,7 @@
+"""
+This script is adapted from
+"""
+
 import os
 import time
 import shutil

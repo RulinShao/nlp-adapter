@@ -268,6 +268,15 @@ class VisionTransformer(nn.Module):
             self.reset_classifier(new_head)
             self.head.requires_grad = True
 
+    def set_head(self, new_head=None):
+        # Set the head layer trainable
+        # Reset the head layer when dimension of new head is given
+        for name, param in self.named_parameters():
+            param.requires_grad = False
+        if new_head:
+            self.reset_classifier(new_head)
+        self.head.requires_grad = True
+
     def forward_features(self, x):
         x = self.patch_embed(x)
         cls_token = self.cls_token.expand(x.shape[0], -1, -1)  # stole cls_tokens impl from Phil Wang, thanks

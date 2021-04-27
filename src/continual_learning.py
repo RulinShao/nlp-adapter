@@ -1,3 +1,6 @@
+"""
+This script is adapted from https://github.com/RAIVNLab/supsup.
+"""
 import os
 import pathlib
 import random
@@ -60,11 +63,16 @@ def main():
 
     # Change classifier head dimension and set adapter&norm&head trainable.
     task_length = 1000 // args.num_tasks
-    if args.only_adapter:
+    if args.train_adapter:
         if hasattr(model, "module"):
             model.module.set_adapter(new_head=task_length)
         else:
             model.set_adapter(new_head=task_length)
+    elif args.train_head:
+        if hasattr(model, "module"):
+            model.module.set_head(new_head=task_length)
+        else:
+            model.set_head(new_head=task_length)
     else:
         model.reset_classifier(num_classes=task_length)
 
