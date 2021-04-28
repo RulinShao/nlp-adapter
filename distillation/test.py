@@ -48,7 +48,7 @@ args = parser.parse_args()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
-def load_model(device='cuda'):
+def load_model():
 
     config = yaml_util.load_yaml_file(os.path.expanduser(args.config))
     models_config = config['models']
@@ -72,6 +72,8 @@ def load_model(device='cuda'):
             model.load_state_dict(ckpt['model'], strict=True)
         else:
             logger.info('No model parameters found')
+    import torchvision
+    model = torchvision.models.resnet34(pretrained=True)
     return model.to(device)
 
 
