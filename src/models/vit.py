@@ -13,7 +13,7 @@ from timm.models.registry import register_model, is_model, model_entrypoint
 from timm.models import create_model
 from timm.models.helpers import load_pretrained, load_checkpoint
 
-from layers.weight_init import lecun_normal_
+from models.layers.weight_init import lecun_normal_
 
 
 _logger = logging.getLogger(__name__)
