@@ -1,1 +1,0 @@
-python3 kd_main.py --config configs/ilsvrc2012/single_stage/kd/resnet_from_vit.yaml --log log/ilsvrc2012/kd/resnet_from_vit.txt

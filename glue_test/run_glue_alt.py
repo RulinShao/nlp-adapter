@@ -66,7 +66,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DataTrainingArguments:
     """
-    Arguments pertaining to what data we are going to input our model for training and eval.
+    Arguments pertaining to what datasets we are going to input our model for training and eval.
 
     Using `HfArgumentParser` we can turn this class
     into argparse arguments to be able to specify them on
@@ -95,10 +95,10 @@ class DataTrainingArguments:
         },
     )
     train_file: Optional[str] = field(
-        default=None, metadata={"help": "A csv or a json file containing the training data."}
+        default=None, metadata={"help": "A csv or a json file containing the training datasets."}
     )
     validation_file: Optional[str] = field(
-        default=None, metadata={"help": "A csv or a json file containing the validation data."}
+        default=None, metadata={"help": "A csv or a json file containing the validation datasets."}
     )
 
     def __post_init__(self):

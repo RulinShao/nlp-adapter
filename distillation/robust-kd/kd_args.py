@@ -1,35 +1,18 @@
-import parser as _parser
-
 import argparse
-import sys
-import yaml
+
 
 args = None
 
 
 def parse_arguments():
     # Training settings
-    parser = argparse.ArgumentParser(description="AdapterCL")
+    parser = argparse.ArgumentParser(description="KD")
     parser.add_argument(
-        "--config", type=str, default=None, help="Config file to use, YAML format"
-    )
-    parser.add_argument("--name", type=str, default="default", help="Experiment id.")
-    parser.add_argument(
-        "--model_name", type=str, default="vit_small_patch16_224_adapter", help="timm model name"
+        "--teacher_model", type=str, default="vit_small_patch16_224_adapter", help="teacher model name"
     )
     parser.add_argument(
-        "--train_adapter", type=bool, default=False, help="Train the adapter and norm layers only"
+        "--student_model", type=str, default="resnet18", help="student model name"
     )
-    parser.add_argument(
-        "--train_head", type=bool, default=True, help="Train the head layer only"
-    )
-    parser.add_argument(
-        "--multigpu",
-        default="0,1,2,3",
-        type=lambda x: [int(a) for a in x.split(",")],
-        help="Which GPUs to use for multigpu training",
-    )
-    parser.add_argument("--workers", type=int, default=8, help="how many cpu workers")
     parser.add_argument(
         "--optimizer", type=str, default="adam", help="Which optimizer to use"
     )
@@ -50,7 +33,7 @@ def parse_arguments():
     parser.add_argument(
         "--lr",
         type=float,
-        default=0.00005,
+        default=0.0005,
         metavar="LR",
         help="learning rate (default: 0.1)",
     )
@@ -85,30 +68,38 @@ def parse_arguments():
         metavar="N",
         help="how many batches to wait before logging training status",
     )
+    parser.add_argument("--workers", type=int, default=4, help="how many cpu workers")
+    parser.add_argument("--name", type=str, default="default", help="Experiment id.")
     parser.add_argument(
-        "--data", type=str, default='/home/ec2-user/dataset/ilsvrc2012/', help="Location to store data",
-    )
-    parser.add_argument(
-        "--num-tasks",
-        default=100,
-        type=int,
-        help="Number of tasks, None if no adaptation is necessary",
+        "--datasets", type=str, default='../../../dataset/', help="Location to store datasets",
     )
     parser.add_argument(
         "--log-dir",
         type=str,
-        default="outputs/",
+        default="ouputs",
         help="Location to logs/checkpoints",
     )
     parser.add_argument("--resume", type=str, default=None, help='optionally resume')
     parser.add_argument("--model", type=str, help="Type of model.")
+    parser.add_argument(
+        "--multigpu",
+        default="0,1",
+        type=lambda x: [int(a) for a in x.split(",")],
+        help="Which GPUs to use for multigpu training",
+    )
     parser.add_argument(
         "--eval-ckpts",
         default=None,
         type=lambda x: [int(a) for a in x.split(",")],
         help="After learning n tasks for n in eval_ckpts we perform evaluation on all tasks learned so far",
     )
-    parser.add_argument("--set", type=str, default='SplitImageNet', help="Which dataset to use")
+    parser.add_argument(
+        "--num-tasks",
+        default=10,
+        type=int,
+        help="Number of tasks, None if no adaptation is necessary",
+    )
+    parser.add_argument("--set", type=str, default='ImageNet', help="Which dataset to use")
     parser.add_argument(
         "--save", action="store_true", default=True, help="save checkpoints"
     )
@@ -144,27 +135,7 @@ def parse_arguments():
 
     args = parser.parse_args()
 
-    # Allow for use from notebook without config file
-    if args.config is not None:
-        get_config(args)
-
     return args
-
-
-def get_config(args):
-    # get commands from command line
-    override_args = _parser.argv_to_vars(sys.argv)
-
-    # load yaml file
-    yaml_txt = open(args.config).read()
-
-    # override args
-    loaded_yaml = yaml.load(yaml_txt, Loader=yaml.FullLoader)
-    for v in override_args:
-        loaded_yaml[v] = getattr(args, v)
-
-    print(f"=> Reading YAML config from {args.config}")
-    args.__dict__.update(loaded_yaml)
 
 
 def run_args():
