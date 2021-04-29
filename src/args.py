@@ -36,6 +36,13 @@ def parse_arguments():
         "--save", type=str, default="adapter", choices=["full", "adapter, head"], help="save full checkpoints if full, save only tranable parameter is partial"
     )
     parser.add_argument(
+        "--train-weight-tasks",
+        type=int,
+        default=1,
+        metavar="N",
+        help="number of tasks to train the weights, e.g. 1 for batchensembles. -1 for all tasks",
+    )
+    parser.add_argument(
         "--task-eval",
         default=None,
         type=int,
@@ -124,13 +131,6 @@ def parse_arguments():
     parser.add_argument("--no-scheduler", action="store_true", help="constant LR")
     parser.add_argument(
         "--iter-lim", default=-1, type=int, help="iteration limitation"
-    )
-    parser.add_argument(
-        "--train-weight-tasks",
-        type=int,
-        default=0,
-        metavar="N",
-        help="number of tasks to train the weights, e.g. 1 for batchensembles. -1 for all tasks",
     )
     parser.add_argument(
         "--train-weight-lr",
