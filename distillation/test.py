@@ -72,8 +72,6 @@ def load_model():
             model.load_state_dict(ckpt['model'], strict=True)
         else:
             logger.info('No model parameters found')
-    import torchvision
-    model = torchvision.models.resnet34(pretrained=True)
     return model.to(device)
 
 
@@ -197,8 +195,8 @@ def foolbox_attack(filter=None, filter_preserve='low', free_parm='eps', plot_num
                 break
 
             images, labels = data[0].to(device), data[1].to(device)
-            if step == steps[0]:
-                clean_acc += (get_acc(fmodel, images, labels)) / args.attack_epochs  # accumulate for attack epochs.
+            if step == args.iteration:
+                clean_acc += (get_acc(model, images, labels)) / args.attack_epochs  # accumulate for attack epochs.
 
             _images, _labels = ep.astensors(images, labels)
             raw_advs, clipped_advs, success = attack(fmodel, _images, _labels, epsilons=epsilons)
@@ -232,7 +230,7 @@ def foolbox_attack(filter=None, filter_preserve='low', free_parm='eps', plot_num
             else:
                 robust_acc += robust_accuracy / args.attack_epochs
 
-        if step == steps[0]:
+        if step == args.iteration:
             print("sample size is : ", args.attack_batch_size * args.attack_epochs)
             print(f"clean accuracy:  {clean_acc * 100:.1f} %")
             print(f"Model {args.model} robust accuracy for {args.attack_type} perturbations with")

@@ -100,7 +100,7 @@ def parse_arguments():
         default="outputs/",
         help="Location to logs/checkpoints",
     )
-    parser.add_argument("--resume", type=str, default=None, help='optionally resume')
+    parser.add_argument("--resume", type=str, default=None, help='optionally resume. checkpoint path')
     parser.add_argument("--model", type=str, help="Type of model.")
     parser.add_argument(
         "--eval-ckpts",
@@ -110,7 +110,7 @@ def parse_arguments():
     )
     parser.add_argument("--set", type=str, default='SplitImageNet', help="Which dataset to use")
     parser.add_argument(
-        "--save", action="store_true", default=True, help="save checkpoints"
+        "--save", type=str, default="adapter", choices=["full", "adapter"], help="save full checkpoints if full, save only tranable parameter is partial"
     )
     parser.add_argument("--no-scheduler", action="store_true", help="constant LR")
     parser.add_argument(

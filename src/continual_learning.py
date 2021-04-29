@@ -55,13 +55,13 @@ def main():
         adapt_acc1 = [0.0 for _ in range(args.num_tasks)]
 
     # Get the model.
-    # TODO: set the model output dimension for cl tasks
+    # TODO: write a function to load the backbone model
     model = create_model(args.model_name,
                          pretrained=True,
                          num_classes=1000,
                          in_chans=3, )
 
-    # Change classifier head dimension and set adapter&norm&head trainable.
+    # Change classifier head dimension and set corresponding paramenters (e.g. adapter&norm&head) trainable.
     task_length = 1000 // args.num_tasks
     if args.train_adapter:
         if hasattr(model, "module"):
@@ -165,7 +165,7 @@ def main():
             save_dir=run_base_dir,
         )
 
-        if args.save:
+        if args.save == "full":
             torch.save(
                 {
                     "epoch": args.epochs,
@@ -176,6 +176,18 @@ def main():
                     "args": args,
                 },
                 run_base_dir / "final.pt",
+            )
+        elif args.save == "adapter":
+            torch.save(
+                {
+                    "epoch": args.epochs,
+                    "arch": args.model,
+                    "state_dict": {k: v for k, v in model.state_dict().items()
+                                  if 'bn' in k or 'adapter' in k or 'head' in k},
+                    "curr_acc1": curr_acc1,
+                    "args": args,
+                },
+                run_base_dir / f"task{args.task_eval}_adapter_final.pt",
             )
 
         return best_acc1
