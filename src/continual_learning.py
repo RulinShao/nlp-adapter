@@ -57,7 +57,7 @@ def main():
     # Get the model.
     # TODO: write a function to load the backbone model
     model = create_model(args.model_name,
-                         pretrained=True,
+                         pretrained=args.pretrained,
                          num_classes=1000,
                          in_chans=3, )
 
@@ -80,6 +80,7 @@ def main():
     model = utils.set_gpu(model)
 
     # Optionally resume from a checkpoint.
+    # TODO: resume script for loading adapters
     if args.resume:
         if os.path.isfile(args.resume):
             print(f"=> Loading checkpoint '{args.resume}'")
@@ -175,7 +176,7 @@ def main():
                     "curr_acc1": curr_acc1,
                     "args": args,
                 },
-                run_base_dir / "final.pt",
+                run_base_dir / f"task{args.task_eval}_full_final.pt",
             )
         elif args.save == "adapter":
             torch.save(
@@ -184,6 +185,18 @@ def main():
                     "arch": args.model,
                     "state_dict": {k: v for k, v in model.state_dict().items()
                                   if 'bn' in k or 'adapter' in k or 'head' in k},
+                    "curr_acc1": curr_acc1,
+                    "args": args,
+                },
+                run_base_dir / f"task{args.task_eval}_adapter_final.pt",
+            )
+        elif args.save == "head":
+            torch.save(
+                {
+                    "epoch": args.epochs,
+                    "arch": args.model,
+                    "state_dict": {k: v for k, v in model.state_dict().items()
+                                   if 'head' in k},
                     "curr_acc1": curr_acc1,
                     "args": args,
                 },
@@ -211,22 +224,20 @@ def main():
             p.grad = None
 
         # Make a list of the parameters relavent to this task.
+        # TODO: load parameters for a specific task
         params = []
         for n, p in model.named_parameters():
-            if not p.requires_grad:
-                continue
-            split = n.split(".")
-            if split[-2] in ["scores", "s", "t"] and (
-                    int(split[-1]) == idx or (args.trainer and "nns" in args.trainer)
-            ):
-                params.append(p)
             # train all weights if train_weight_tasks is -1, or num_tasks_learned < train_weight_tasks
             if (
                     args.train_weight_tasks < 0
                     or num_tasks_learned < args.train_weight_tasks
             ):
-                if split[-1] == "weight" or split[-1] == "bias":
-                    params.append(p)
+                p.requires_grad = True
+                params.append(p)
+            else:
+                if not p.requires_grad:
+                    continue
+                params.append(p)
 
         # train_weight_tasks specifies the number of tasks that the weights are trained for.
         # e.g. in SupSup, train_weight_tasks = 0. in BatchE, train_weight_tasks = 1.
@@ -269,7 +280,7 @@ def main():
             )
 
             # Required for our PSP implementation, not used otherwise.
-            utils.cache_weights(model, num_tasks_learned + 1)
+            # utils.cache_weights(model, num_tasks_learned + 1)
 
             curr_acc1[idx] = test(
                 model, writer, criterion, data_loader.val_loader, epoch, idx
@@ -292,6 +303,43 @@ def main():
             save_dir=run_base_dir,
         )
 
+        if args.save == "full":
+            torch.save(
+                {
+                    "epoch": args.epochs,
+                    "arch": args.model,
+                    "state_dict": model.state_dict(),
+                    "best_acc1": best_acc1,
+                    "curr_acc1": curr_acc1,
+                    "args": args,
+                },
+                run_base_dir / f"task{idx}_full_final.pt",
+            )
+        elif args.save == "adapter":
+            torch.save(
+                {
+                    "epoch": args.epochs,
+                    "arch": args.model,
+                    "state_dict": {k: v for k, v in model.state_dict().items()
+                                  if 'bn' in k or 'adapter' in k or 'head' in k},
+                    "curr_acc1": curr_acc1,
+                    "args": args,
+                },
+                run_base_dir / f"task{idx}_adapter_final.pt",
+            )
+        elif args.save == "head":
+            torch.save(
+                {
+                    "epoch": args.epochs,
+                    "arch": args.model,
+                    "state_dict": {k: v for k, v in model.state_dict().items()
+                                   if 'head' in k},
+                    "curr_acc1": curr_acc1,
+                    "args": args,
+                },
+                run_base_dir / f"task{idx}_adapter_final.pt",
+            )
+
         # Save memory by deleting the optimizer and scheduler.
         del optimizer, scheduler, params
 
@@ -307,84 +355,6 @@ def main():
             )
         else:
             model.apply(lambda m: setattr(m, "num_tasks_learned", num_tasks_learned))
-
-        # TODO series of asserts with required arguments (eg num_tasks)
-        # args.eval_ckpts contains values of num_tasks_learned for which testing on all tasks so far is performed.
-        # this is done by default when all tasks have been learned, but you can do something like
-        # args.eval_ckpts = [5,10] to also do this when 5 tasks are learned, and again when 10 tasks are learned.
-        if num_tasks_learned in args.eval_ckpts or num_tasks_learned == args.num_tasks:
-            avg_acc = 0.0
-            avg_correct = 0.0
-
-            # Settting task to -1 tells the model to infer task identity instead of being given the task.
-            model.apply(lambda m: setattr(m, "task", -1))
-
-            # an "adaptor" is used to infer task identity.
-            # args.adaptor == gt implies we are in scenario GG.
-
-            # This will cache all of the information the model needs for inferring task identity.
-            if args.adaptor != "gt":
-                utils.cache_masks(model)
-
-            # Iterate through all tasks.
-            adapt = getattr(adaptors, args.adaptor)
-
-            for i in range(num_tasks_learned):
-                print(f"Testing {i}: {args.set} ({i})")
-                # model.apply(lambda m: setattr(m, "task", i))
-
-                # Update the data loader so it is returning data for the right task.
-                data_loader.update_task(i)
-
-                # Clear the stored information -- memory leak happens if not.
-                for p in model.parameters():
-                    p.grad = None
-
-                for b in model.buffers():
-                    b.grad = None
-
-                torch.cuda.empty_cache()
-
-                adapt_acc = adapt(
-                    model,
-                    writer,
-                    data_loader.val_loader,
-                    num_tasks_learned,
-                    i,
-                )
-
-                adapt_acc1[i] = adapt_acc
-                avg_acc += adapt_acc
-
-                torch.cuda.empty_cache()
-                utils.write_adapt_results(
-                    name=args.name,
-                    task=f"{args.set}_{i}",
-                    num_tasks_learned=num_tasks_learned,
-                    curr_acc1=curr_acc1[i],
-                    adapt_acc1=adapt_acc,
-                    task_number=i,
-                )
-
-            writer.add_scalar(
-                "adapt/avg_acc", avg_acc / num_tasks_learned, num_tasks_learned
-            )
-
-            utils.clear_masks(model)
-            torch.cuda.empty_cache()
-
-    if args.save:
-        torch.save(
-            {
-                "epoch": args.epochs,
-                "arch": args.model,
-                "state_dict": model.state_dict(),
-                "best_acc1": best_acc1,
-                "curr_acc1": curr_acc1,
-                "args": args,
-            },
-            run_base_dir / "final.pt",
-        )
 
     return adapt_acc1
 

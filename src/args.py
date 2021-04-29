@@ -13,15 +13,33 @@ def parse_arguments():
     parser.add_argument(
         "--config", type=str, default=None, help="Config file to use, YAML format"
     )
-    parser.add_argument("--name", type=str, default="default", help="Experiment id.")
+    parser.add_argument("--name", type=str, default="100task_1full_99adapter", help="Experiment id.")
+    parser.add_argument(
+        "--log-dir",
+        type=str,
+        default="outputs/",
+        help="Location to logs/checkpoints",
+    )
     parser.add_argument(
         "--model_name", type=str, default="vit_small_patch16_224_adapter", help="timm model name"
     )
     parser.add_argument(
-        "--train_adapter", type=bool, default=False, help="Train the adapter and norm layers only"
+        "--pretrained", type=bool, default=False, help="whether use a pretrained model as the backbone"
     )
     parser.add_argument(
-        "--train_head", type=bool, default=True, help="Train the head layer only"
+        "--train_adapter", type=bool, default=True, help="Train the adapter and norm layers only"
+    )
+    parser.add_argument(
+        "--train_head", type=bool, default=False, help="Train the head layer only"
+    )
+    parser.add_argument(
+        "--save", type=str, default="adapter", choices=["full", "adapter, head"], help="save full checkpoints if full, save only tranable parameter is partial"
+    )
+    parser.add_argument(
+        "--task-eval",
+        default=None,
+        type=int,
+        help="Only evaluate on this task (for memory efficiency and grounded task info",
     )
     parser.add_argument(
         "--multigpu",
@@ -94,12 +112,6 @@ def parse_arguments():
         type=int,
         help="Number of tasks, None if no adaptation is necessary",
     )
-    parser.add_argument(
-        "--log-dir",
-        type=str,
-        default="outputs/",
-        help="Location to logs/checkpoints",
-    )
     parser.add_argument("--resume", type=str, default=None, help='optionally resume. checkpoint path')
     parser.add_argument("--model", type=str, help="Type of model.")
     parser.add_argument(
@@ -109,18 +121,9 @@ def parse_arguments():
         help="After learning n tasks for n in eval_ckpts we perform evaluation on all tasks learned so far",
     )
     parser.add_argument("--set", type=str, default='SplitImageNet', help="Which dataset to use")
-    parser.add_argument(
-        "--save", type=str, default="adapter", choices=["full", "adapter"], help="save full checkpoints if full, save only tranable parameter is partial"
-    )
     parser.add_argument("--no-scheduler", action="store_true", help="constant LR")
     parser.add_argument(
         "--iter-lim", default=-1, type=int, help="iteration limitation"
-    )
-    parser.add_argument(
-        "--task-eval",
-        default=0,
-        type=int,
-        help="Only evaluate on this task (for memory efficiency and grounded task info",
     )
     parser.add_argument(
         "--train-weight-tasks",
