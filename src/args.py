@@ -134,7 +134,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--train-weight-lr",
-        default=0.1,
+        default=0.01,
         type=float,
         help="While training the weights, which LR to use.",
     )

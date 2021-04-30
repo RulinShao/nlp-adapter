@@ -17,6 +17,7 @@ import data
 import schedulers
 import trainers
 import utils
+from models.utils import get_backbone, get_task_model
 
 
 from timm.models import load_checkpoint, create_model
@@ -48,57 +49,16 @@ def main():
     # Get dataloader.
     data_loader = getattr(data, args.set)()
 
+    task_length = 1000 // args.num_tasks
+
+    # Get the backbone model with a new head layer.
+    model = get_backbone(head_dim=task_length, no_head=False)
+
     # Track accuracy on all tasks.
     if args.num_tasks:
         best_acc1 = [0.0 for _ in range(args.num_tasks)]
         curr_acc1 = [0.0 for _ in range(args.num_tasks)]
         adapt_acc1 = [0.0 for _ in range(args.num_tasks)]
-
-    # Get the model.
-    # TODO: write a function to load the backbone model
-    model = create_model(args.model_name,
-                         pretrained=args.pretrained,
-                         num_classes=1000,
-                         in_chans=3, )
-
-    # Change classifier head dimension and set corresponding paramenters (e.g. adapter&norm&head) trainable.
-    task_length = 1000 // args.num_tasks
-    if args.train_adapter:
-        if hasattr(model, "module"):
-            model.module.set_adapter(new_head=task_length)
-        else:
-            model.set_adapter(new_head=task_length)
-    elif args.train_head:
-        if hasattr(model, "module"):
-            model.module.set_head(new_head=task_length)
-        else:
-            model.set_head(new_head=task_length)
-    else:
-        model.reset_classifier(num_classes=task_length)
-
-    # Put the model on the GPU,
-    model = utils.set_gpu(model)
-
-    # Optionally resume from a checkpoint.
-    # TODO: resume script for loading adapters
-    if args.resume:
-        if os.path.isfile(args.resume):
-            print(f"=> Loading checkpoint '{args.resume}'")
-            checkpoint = torch.load(
-                args.resume, map_location=f"cuda:{args.multigpu[0]}"
-            )
-            best_acc1 = checkpoint["best_acc1"]
-            pretrained_dict = checkpoint["state_dict"]
-            model_dict = model.state_dict()
-            pretrained_dict = {
-                k: v for k, v in pretrained_dict.items() if k in model_dict
-            }
-            model_dict.update(pretrained_dict)
-            model.load_state_dict(pretrained_dict)
-
-            print(f"=> Loaded checkpoint '{args.resume}' (epoch {checkpoint['epoch']})")
-        else:
-            print(f"=> No checkpoint found at '{args.resume}'")
 
     criterion = nn.CrossEntropyLoss().to(args.device)
 
@@ -112,105 +72,102 @@ def main():
 
     train, test = trainer.train, trainer.test
 
-    # TODO: Put this in another file
-    if args.task_eval is not None:
-        assert 0 <= args.task_eval < args.num_tasks, "Not a valid task idx"
-        print(f"Task {args.set}: {args.task_eval}")
-
-        model.apply(lambda m: setattr(m, "task", args.task_eval))
-
-        assert hasattr(
-            data_loader, "update_task"
-        ), "[ERROR] Need to implement update task method for use with multitask experiments"
-
-        data_loader.update_task(args.task_eval)
-
-        optimizer = get_optimizer(args, model)
-        lr_scheduler = schedulers.get_policy(args.lr_policy or "cosine_lr")(
-            optimizer, args
-        )
-
-        # Train and do inference and normal for args.epochs epcohs.
-        best_acc1 = 0.0
-
-        for epoch in range(0, args.epochs):
-            lr_scheduler(epoch, None)
-
-            train(
-                model,
-                writer,
-                data_loader.train_loader,
-                optimizer,
-                criterion,
-                epoch,
-                task_idx=args.task_eval,
-                data_loader=None,
-            )
-
-            curr_acc1 = test(
-                model,
-                writer,
-                criterion,
-                data_loader.val_loader,
-                epoch,
-                task_idx=args.task_eval,
-            )
-
-            if curr_acc1 > best_acc1:
-                best_acc1 = curr_acc1
-
-        utils.write_result_to_csv(
-            name=f"{args.name}~set={args.set}~task={args.task_eval}",
-            curr_acc1=curr_acc1,
-            best_acc1=best_acc1,
-            save_dir=run_base_dir,
-        )
-
-        if args.save == "full":
-            torch.save(
-                {
-                    "epoch": args.epochs,
-                    "arch": args.model,
-                    "state_dict": model.state_dict(),
-                    "best_acc1": best_acc1,
-                    "curr_acc1": curr_acc1,
-                    "args": args,
-                },
-                run_base_dir / f"task{args.task_eval}_full_final.pt",
-            )
-        elif args.save == "adapter":
-            torch.save(
-                {
-                    "epoch": args.epochs,
-                    "arch": args.model,
-                    "state_dict": {k: v for k, v in model.state_dict().items()
-                                  if 'bn' in k or 'adapter' in k or 'head' in k},
-                    "curr_acc1": curr_acc1,
-                    "args": args,
-                },
-                run_base_dir / f"task{args.task_eval}_adapter_final.pt",
-            )
-        elif args.save == "head":
-            torch.save(
-                {
-                    "epoch": args.epochs,
-                    "arch": args.model,
-                    "state_dict": {k: v for k, v in model.state_dict().items()
-                                   if 'head' in k},
-                    "curr_acc1": curr_acc1,
-                    "args": args,
-                },
-                run_base_dir / f"task{args.task_eval}_adapter_final.pt",
-            )
-
-        return best_acc1
+    # # TODO: Put this in another file
+    # if args.task_eval is not None:
+    #     assert 0 <= args.task_eval < args.num_tasks, "Not a valid task idx"
+    #     print(f"Task {args.set}: {args.task_eval}")
+    #
+    #     model.apply(lambda m: setattr(m, "task", args.task_eval))
+    #
+    #     assert hasattr(
+    #         data_loader, "update_task"
+    #     ), "[ERROR] Need to implement update task method for use with multitask experiments"
+    #
+    #     data_loader.update_task(args.task_eval)
+    #
+    #     optimizer = get_optimizer(args, model)
+    #     lr_scheduler = schedulers.get_policy(args.lr_policy or "cosine_lr")(
+    #         optimizer, args
+    #     )
+    #
+    #     # Train and do inference and normal for args.epochs epcohs.
+    #     best_acc1 = 0.0
+    #
+    #     for epoch in range(0, args.epochs):
+    #         lr_scheduler(epoch, None)
+    #
+    #         train(
+    #             model,
+    #             writer,
+    #             data_loader.train_loader,
+    #             optimizer,
+    #             criterion,
+    #             epoch,
+    #             task_idx=args.task_eval,
+    #             data_loader=None,
+    #         )
+    #
+    #         curr_acc1 = test(
+    #             model,
+    #             writer,
+    #             criterion,
+    #             data_loader.val_loader,
+    #             epoch,
+    #             task_idx=args.task_eval,
+    #         )
+    #
+    #         if curr_acc1 > best_acc1:
+    #             best_acc1 = curr_acc1
+    #
+    #     utils.write_result_to_csv(
+    #         name=f"{args.name}~set={args.set}~task={args.task_eval}",
+    #         curr_acc1=curr_acc1,
+    #         best_acc1=best_acc1,
+    #         save_dir=run_base_dir,
+    #     )
+    #
+    #     if args.save == "full":
+    #         torch.save(
+    #             {
+    #                 "epoch": args.epochs,
+    #                 "arch": args.model,
+    #                 "state_dict": model.state_dict(),
+    #                 "best_acc1": best_acc1,
+    #                 "curr_acc1": curr_acc1,
+    #                 "args": args,
+    #             },
+    #             run_base_dir / f"task{args.task_eval}_full_final.pt",
+    #         )
+    #     elif args.save == "adapter":
+    #         torch.save(
+    #             {
+    #                 "epoch": args.epochs,
+    #                 "arch": args.model,
+    #                 "state_dict": {k: v for k, v in model.state_dict().items()
+    #                               if 'bn' in k or 'adapter' in k or 'head' in k},
+    #                 "curr_acc1": curr_acc1,
+    #                 "args": args,
+    #             },
+    #             run_base_dir / f"task{args.task_eval}_adapter_final.pt",
+    #         )
+    #     elif args.save == "head":
+    #         torch.save(
+    #             {
+    #                 "epoch": args.epochs,
+    #                 "arch": args.model,
+    #                 "state_dict": {k: v for k, v in model.state_dict().items()
+    #                                if 'head' in k},
+    #                 "curr_acc1": curr_acc1,
+    #                 "args": args,
+    #             },
+    #             run_base_dir / f"task{args.task_eval}_adapter_final.pt",
+    #         )
+    #
+    #     return best_acc1
 
     # Iterate through all tasks.
     for idx in range(args.num_tasks or 0):
         print(f"Task {args.set}: {idx}")
-
-        # Tell the model which task it is trying to solve -- in Scenario NNs this is ignored.
-        model.apply(lambda m: setattr(m, "task", idx))
 
         # Update the data loader so that it returns the data for the correct task, also done by passing the task index.
         assert hasattr(
@@ -219,25 +176,11 @@ def main():
 
         data_loader.update_task(idx)
 
-        # Clear the grad on all the parameters.
-        for p in model.parameters():
-            p.grad = None
-
-        # Make a list of the parameters relavent to this task.
-        # TODO: load parameters for a specific task
-        params = []
-        for n, p in model.named_parameters():
-            # train all weights if train_weight_tasks is -1, or num_tasks_learned < train_weight_tasks
-            if (
-                    args.train_weight_tasks < 0
-                    or num_tasks_learned < args.train_weight_tasks
-            ):
-                p.requires_grad = True
-                params.append(p)
-            else:
-                if not p.requires_grad:
-                    continue
-                params.append(p)
+        # Get the model modified for the specific task and trainable params.
+        # TODO:
+        #  1. return best_acc1 when resuming from a ckpt.
+        #  2. load test related adapters when resume.
+        model, params = get_task_model(model, num_tasks_learned, idx, task_length)
 
         # train_weight_tasks specifies the number of tasks that the weights are trained for.
         # e.g. in SupSup, train_weight_tasks = 0. in BatchE, train_weight_tasks = 1.

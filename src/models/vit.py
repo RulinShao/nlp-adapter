@@ -259,6 +259,7 @@ class VisionTransformer(nn.Module):
     def set_adapter(self, new_head=None):
         # Set adapter and norm layers trainable.
         # Reset the head layer when dimension of new head is given
+        self.activate_adapter()
         for name, param in self.named_parameters():
             if 'adapter' in name or 'norm' in name:
                 param.requires_grad = True
@@ -269,13 +270,21 @@ class VisionTransformer(nn.Module):
             self.head.requires_grad = True
 
     def set_head(self, new_head=None):
+        # Remove adapter layers.
         # Set the head layer trainable
         # Reset the head layer when dimension of new head is given
+        self.remove_adapter()
         for name, param in self.named_parameters():
             param.requires_grad = False
         if new_head:
             self.reset_classifier(new_head)
         self.head.requires_grad = True
+
+    def remove_adapter(self):
+        self.use_adapter = False
+
+    def activate_adapter(self):
+        self.use_adapter = True
 
     def forward_features(self, x):
         x = self.patch_embed(x)
