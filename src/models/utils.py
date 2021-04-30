@@ -19,8 +19,8 @@ def get_backbone(head_dim=1000//args.num_tasks, no_head=False):
         else:
             model.set_head(new_head=head_dim)
 
-    # # Put the model on the GPU,
-    # model = utils.set_gpu(model)
+    # Put the model on the GPU,
+    model = utils.set_gpu(model)
 
     return model
 
@@ -36,9 +36,6 @@ def get_task_model(model, num_tasks_learned, idx, task_length):
 
     if args.resume:
         _resume_from_ckpt(model)
-
-    # Put the model on the GPU,
-    model = utils.set_gpu(model)
 
     for p in model.parameters():
         p.grad = None
