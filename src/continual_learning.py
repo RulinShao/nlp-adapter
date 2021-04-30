@@ -54,9 +54,6 @@ def main():
     # Get the backbone model with a new head layer.
     model = get_backbone(head_dim=task_length, no_head=False)
 
-    # Put the model on the GPU,
-    model = utils.set_gpu(model)
-
     # Track accuracy on all tasks.
     if args.num_tasks:
         best_acc1 = [0.0 for _ in range(args.num_tasks)]
@@ -184,6 +181,9 @@ def main():
         #  1. return best_acc1 when resuming from a ckpt.
         #  2. load test related adapters when resume.
         model, params = get_task_model(model, num_tasks_learned, idx, task_length)
+
+        # Put the model on the GPU,
+        model = utils.set_gpu(model)
 
         # train_weight_tasks specifies the number of tasks that the weights are trained for.
         # e.g. in SupSup, train_weight_tasks = 0. in BatchE, train_weight_tasks = 1.
