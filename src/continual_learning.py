@@ -54,6 +54,9 @@ def main():
     # Get the backbone model with a new head layer.
     model = get_backbone(head_dim=task_length, no_head=False)
 
+    # Put the model on the GPU,
+    model = utils.set_gpu(model)
+
     # Track accuracy on all tasks.
     if args.num_tasks:
         best_acc1 = [0.0 for _ in range(args.num_tasks)]
