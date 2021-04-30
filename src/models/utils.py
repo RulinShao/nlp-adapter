@@ -22,14 +22,17 @@ def get_backbone(head_dim=1000//args.num_tasks, no_head=False):
     return model
 
 
-def get_task_model(model, num_tasks_learned, idx, task_length):
+def get_task_model(model, num_tasks_learned, idx):
     """
     :param num_tasks_learned:
     :param idx:
     :param task_length:
     :return:
     """
-    _modify_model(model, idx, task_length)
+    # modify_model(model, idx, task_length)
+
+    # Tell the model which task it is trying to solve -- in Scenario NNs this is ignored.
+    model.apply(lambda m: setattr(m, "task", idx))
 
     if args.resume:
         _resume_from_ckpt(model)
@@ -80,10 +83,7 @@ def _resume_from_ckpt(model):
     return model, best_acc1
 
 
-def _modify_model(model, idx, task_length):
-
-    # Tell the model which task it is trying to solve -- in Scenario NNs this is ignored.
-    model.apply(lambda m: setattr(m, "task", idx))
+def modify_model(model, task_length):
 
     # Change classifier head dimension and set corresponding paramenters (e.g. adapter&norm&head) trainable.
     if args.train_adapter:

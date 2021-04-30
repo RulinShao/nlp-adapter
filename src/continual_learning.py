@@ -17,7 +17,7 @@ import data
 import schedulers
 import trainers
 import utils
-from models.utils import get_backbone, get_task_model
+from models.utils import get_backbone, get_task_model, modify_model
 
 
 from timm.models import load_checkpoint, create_model
@@ -53,6 +53,10 @@ def main():
 
     # Get the backbone model with a new head layer.
     model = get_backbone(head_dim=task_length, no_head=False)
+    model = modify_model(model, task_length)
+
+    # Put the model on the GPU,
+    model = utils.set_gpu(model)
 
     # Track accuracy on all tasks.
     if args.num_tasks:
@@ -180,10 +184,7 @@ def main():
         # TODO:
         #  1. return best_acc1 when resuming from a ckpt.
         #  2. load test related adapters when resume.
-        model, params = get_task_model(model, num_tasks_learned, idx, task_length)
-
-        # Put the model on the GPU,
-        model = utils.set_gpu(model)
+        model, params = get_task_model(model, num_tasks_learned, idx)
 
         # train_weight_tasks specifies the number of tasks that the weights are trained for.
         # e.g. in SupSup, train_weight_tasks = 0. in BatchE, train_weight_tasks = 1.
