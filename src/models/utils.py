@@ -37,6 +37,9 @@ def get_task_model(model, num_tasks_learned, idx, task_length):
     if args.resume:
         _resume_from_ckpt(model)
 
+    # Put the model on the GPU,
+    model = utils.set_gpu(model)
+
     for p in model.parameters():
         p.grad = None
 
