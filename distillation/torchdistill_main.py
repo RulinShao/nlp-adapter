@@ -43,14 +43,16 @@ def get_argparser():
 
 def load_model(model_config, device, distributed, sync_bn):
     model = get_image_classification_model(model_config, distributed, sync_bn)
-    model_save_path = model_config.get('model_save_path', None)
+
     if model is None:
         repo_or_dir = model_config.get('repo_or_dir', None)
         model = get_model(model_config['name'], repo_or_dir, **model_config['params'])
-    elif model_save_path:
+
+    model_save_path = model_config.get('model_save_path', None)
+    if model_save_path:
         # New situation for loading pretrained model from a local path.
         logger.info(f"Loading checkpoint from local path: {model_save_path}")
-        model.load_state_dict(torch.load(model_save_path))
+        model.load_state_dict(torch.load(model_save_path), strict=False)
 
     ckpt_file_path = model_config['ckpt']
     load_ckpt(ckpt_file_path, model=model, strict=True)
