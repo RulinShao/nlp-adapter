@@ -36,10 +36,7 @@ datasets:
                 size: *input_size
             - *totensor
             - *normalize
-"""
-vit repo: 'rwightman/pytorch-image-models'
-robust cnn dir:
-"""
+
 models:
   teacher_model:
     name: &teacher_model_name 'robust_cnn'
