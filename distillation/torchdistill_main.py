@@ -49,6 +49,7 @@ def load_model(model_config, device, distributed, sync_bn):
         # New situation for loading pretrained model from a local path.
         model_save_path = model_config.get('repo_or_dir', None)
         if model_save_path:
+            logger.info('Loading checkpoint from local path: {model_save_path}')
             model.load_state_dict(torch.load(model_save_path))
 
     ckpt_file_path = model_config['ckpt']
