@@ -28,7 +28,7 @@ logger = def_logger.getChild(__name__)
 
 
 parser = argparse.ArgumentParser(description='Test the robustness of distilled cnn from vit')
-parser.add_argument('--config', type=str, default='configs/ilsvrc2012/kd/resnet_from_vit.yaml')
+parser.add_argument('--config', type=str, default='configs/ilsvrc2012/kd/resnet18_from_robust_resnet50.yaml')
 parser.add_argument('--model', default='resnet18', type=str)
 parser.add_argument('--mode', default='foolbox')
 
