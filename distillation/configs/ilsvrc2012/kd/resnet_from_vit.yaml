@@ -39,12 +39,12 @@ datasets:
 
 models:
   teacher_model:
-    name: &teacher_model_name 'robust_cnn'
-    repo_or_dir: '/home/ec2-user/ckpt/robust_cnn/imagenet_linf_eps4.pt'
+    name: &teacher_model_name 'resnet50'
+    model_save_path: '/home/ec2-user/ckpt/robust_cnn/imagenet_linf_eps4.pt'
     params:
       num_classes: 1000
       pretrained: True
-    experiment: &teacher_experiment !join [*dataset_name, '-', *teacher_model_name]
+    experiment: &teacher_experiment !join [*dataset_name, '-', *teacher_model_name, '-robust']
     ckpt: !join ['./resource/ckpt/ilsvrc2012/teacher/', *teacher_experiment, '.pt']
   student_model:
     name: &student_model_name 'resnet18'

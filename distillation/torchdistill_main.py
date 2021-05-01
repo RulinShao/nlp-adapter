@@ -46,6 +46,10 @@ def load_model(model_config, device, distributed, sync_bn):
     if model is None:
         repo_or_dir = model_config.get('repo_or_dir', None)
         model = get_model(model_config['name'], repo_or_dir, **model_config['params'])
+        # New situation for loading pretrained model from a local path.
+        model_save_path = model_config.get('repo_or_dir', None)
+        if model_save_path:
+            model.load_state_dict(torch.load(model_save_path))
 
     ckpt_file_path = model_config['ckpt']
     load_ckpt(ckpt_file_path, model=model, strict=True)
