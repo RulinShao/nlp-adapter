@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 for i in {1..100}; do
     echo "Number $i: $(date +%Y-%m-%d-%H:%M:%S)"
-    ./run_torchdistill_main.sh
+    python3 torchdistill_main.py
+     --config configs/ilsvrc2012/kd/resnet18_from_robust_resnet50.yaml
+     --log "log/ilsvrc2012/kd/resnet18_from_robust_resnet50/$i.txt"
 done | tee timing.log
