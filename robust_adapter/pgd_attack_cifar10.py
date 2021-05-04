@@ -8,7 +8,6 @@ import torchvision
 from torch.autograd import Variable
 import torch.optim as optim
 from torchvision import datasets, transforms
-from models.wideresnet import *
 from models.resnet import *
 
 
