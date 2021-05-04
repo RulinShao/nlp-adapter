@@ -8,6 +8,8 @@ import torchvision
 import torch.optim as optim
 from torchvision import datasets, transforms
 
+from torch.utils.tensorboard import  SummaryWriter
+
 # from models.wideresnet import *
 from models.resnet import *
 from trades import trades_loss
@@ -151,6 +153,7 @@ def main():
     # init model, ResNet18() can be also used here for training
     # model = WideResNet().to(device)
     model = ResNet18().to(device)
+    model = nn.DataParallel(model)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
     for epoch in range(1, args.epochs + 1):

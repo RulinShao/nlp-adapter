@@ -3,10 +3,33 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+class BasicAdapter(nn.Module):
+
+    def __init__(self, in_dim, h_dim=None, out_dim=None, act_layer=nn.ReLU):
+        super(BasicAdapter, self).__init__()
+        self.in_chans = in_dim
+        if h_dim:
+            self.h_dim = h_dim
+        else:
+            self.h_dim = in_dim // 2
+        if out_dim:
+            self.out_dim = out_dim
+        else:
+            self.out_dim = in_dim
+
+        self.res = nn.Identity()
+        self.down_proj = nn.Conv2d(self.in_chans, self.h_dim, kernel_size=1, stride=1, bias=False)
+        self.act = act_layer()
+        self.up_proj = nn.Conv2d(self.h_dim, self.out_dim, kernel_size=1, stride=1, bias=False)
+
+    def forward(self, x):
+        return self.up_proj(self.act(self.down_proj(x)))+self.res(x)
+
+
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, in_planes, planes, stride=1):
+    def __init__(self, in_planes, planes, stride=1, use_adapter=False):
         super(BasicBlock, self).__init__()
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
@@ -20,12 +43,29 @@ class BasicBlock(nn.Module):
                 nn.BatchNorm2d(self.expansion * planes)
             )
 
+        self.use_adapter = use_adapter
+        if self.use_adapter:
+            self.adapter = BasicAdapter(self.expansion * planes)
+
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.bn2(self.conv2(out))
-        out += self.shortcut(x)
-        out = F.relu(out)
-        return out
+        if self.use_adapter:
+            out = self.conv2(F.relu(self.bn1(self.conv1(x))))
+
+            # TODO: add adapters before or after the bn2
+            adapter_out = self.bn2(self.adapter(out))
+            normal_out = self.bn2(out)
+
+            adapter_out = F.relu(adapter_out + self.shortcut(x))
+            normal_out = F.relu(normal_out + self.shortcut(x))
+
+            # out = F.relu(self.shortcut(x) + self.bn2(self.adapter(self.conv2(F.relu(self.bn1(self.conv1(x)))))))
+            return normal_out, adapter_out
+        else:
+            out = F.relu(self.bn1(self.conv1(x)))
+            out = self.bn2(self.conv2(out))
+            out += self.shortcut(x)
+            out = F.relu(out)
+            return out
 
 
 class Bottleneck(nn.Module):
@@ -57,9 +97,10 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
+    def __init__(self, block, num_blocks, num_classes=10, use_adapter=False):
         super(ResNet, self).__init__()
         self.in_planes = 64
+        self.use_adapter = use_adapter
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
@@ -73,7 +114,7 @@ class ResNet(nn.Module):
         strides = [stride] + [1] * (num_blocks - 1)
         layers = []
         for stride in strides:
-            layers.append(block(self.in_planes, planes, stride))
+            layers.append(block(self.in_planes, planes, stride, use_adapter=self.use_adapter))
             self.in_planes = planes * block.expansion
         return nn.Sequential(*layers)
 
@@ -89,8 +130,8 @@ class ResNet(nn.Module):
         return out
 
 
-def ResNet18():
-    return ResNet(BasicBlock, [2, 2, 2, 2])
+def ResNet18(use_adapter=False):
+    return ResNet(BasicBlock, [2, 2, 2, 2], use_adapter=use_adapter)
 
 
 def ResNet34():
