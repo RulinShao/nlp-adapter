@@ -46,6 +46,10 @@ default_cfgs = {
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_p16_224-80ecf9dd.pth',
         mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5),
     ),
+    # patch models, imagenet21k (weights ported from official Google JAX impl)
+    'vit_base_patch16_224_in21k': _cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_patch16_224_in21k-e5005f0a.pth',
+        num_classes=21843, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
 }
 
 
@@ -381,6 +385,26 @@ def vit_small_patch16_224_adapter(pretrained=False, **kwargs):
     if pretrained:
         load_pretrained(
             model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 3), filter_fn=_conv_filter, strict=False)
+    return model
+
+
+@register_model
+def vit_base_patch16_224_in21k(pretrained=False, **kwargs):
+    """ ViT-Base model (ViT-B/16) from original paper (https://arxiv.org/abs/2010.11929).
+    ImageNet-21k weights @ 224x224, source https://github.com/google-research/vision_transformer.
+    """
+    # model_kwargs = dict(
+    #     patch_size=16, embed_dim=768, depth=12, num_heads=12, representation_size=768, **kwargs)
+    # model = _create_vision_transformer('vit_base_patch16_224_in21k', pretrained=pretrained, **model_kwargs)
+    if pretrained:
+        kwargs.setdefault('qk_scale', 768 ** -0.5)
+    model = VisionTransformer(patch_size=16, embed_dim=768, depth=12, num_heads=12, representation_size=768, use_adapter=True,
+                              **kwargs)
+    model.default_cfg = default_cfgs['vit_base_patch16_224_in21k']
+    if pretrained:
+        load_pretrained(
+            model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 3), filter_fn=_conv_filter,
+            strict=False)
     return model
 
 

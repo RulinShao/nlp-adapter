@@ -13,7 +13,7 @@ def parse_arguments():
     parser.add_argument(
         "--config", type=str, default=None, help="Config file to use, YAML format"
     )
-    parser.add_argument("--name", type=str, default="DEBUG:100task_1full_99adapter", help="Experiment id.")
+    parser.add_argument("--name", type=str, default="DEBUG:in21k_pretrained_100adapter", help="Experiment id.")
     parser.add_argument(
         "--log-dir",
         type=str,
@@ -21,10 +21,10 @@ def parse_arguments():
         help="Location to logs/checkpoints",
     )
     parser.add_argument(
-        "--model_name", type=str, default="vit_small_patch16_224_adapter", help="timm model name"
+        "--model_name", type=str, default="vit_base_patch16_224_in21k_adapter", help="timm model name"
     )
     parser.add_argument(
-        "--pretrained", type=bool, default=False, help="whether use a pretrained model as the backbone"
+        "--pretrained", type=bool, default=True, help="whether use a pretrained model as the backbone"
     )
     parser.add_argument(
         "--train_adapter", type=bool, default=True, help="Train the adapter and norm layers only"
@@ -38,7 +38,7 @@ def parse_arguments():
     parser.add_argument(
         "--train-weight-tasks",
         type=int,
-        default=1,
+        default=0,
         metavar="N",
         help="number of tasks to train the weights, e.g. 1 for batchensembles. -1 for all tasks",
     )
@@ -68,7 +68,7 @@ def parse_arguments():
     parser.add_argument(
         "--epochs",
         type=int,
-        default=100,
+        default=300,
         metavar="N",
         help="number of epochs to train (default: 100)",
     )
