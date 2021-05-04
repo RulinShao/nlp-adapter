@@ -29,12 +29,13 @@ class BasicAdapter(nn.Module):
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, in_planes, planes, stride=1, use_adapter=False):
+    def __init__(self, in_planes, planes, stride=1, use_adapter=False, mode="train"):
         super(BasicBlock, self).__init__()
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
+        self.mode = mode
 
         self.shortcut = nn.Sequential()
         if stride != 1 or in_planes != self.expansion * planes:
@@ -47,23 +48,28 @@ class BasicBlock(nn.Module):
         if self.use_adapter:
             self.adapter = BasicAdapter(self.expansion * planes)
 
-    def forward(self, x):
-        if self.use_adapter:
-            out = self.conv2(F.relu(self.bn1(self.conv1(x))))
+    def forward(self, x_adapter, x_normal=None):
+        if self.mode == "train":
+            assert len(x_adapter) == 2; "Expected inputs for adapters in [clean, adv] form"
+            adapter_out_clean = self.conv2(F.relu(self.bn1(self.conv1(x_adapter[0]))))
+            adapter_out_adv = self.conv2(F.relu(self.bn1(self.conv1(x_adapter[1]))))
+            normal_out = self.conv2(F.relu(self.bn1(self.conv1(x_normal))))
 
             # TODO: add adapters before or after the bn2
-            adapter_out = self.bn2(self.adapter(out))
-            normal_out = self.bn2(out)
+            adapter_out_clean = self.bn2(self.adapter(adapter_out_clean))
+            adapter_out_adv = self.bn2(self.adapter(adapter_out_adv))
+            normal_out = self.bn2(normal_out)
 
-            adapter_out = F.relu(adapter_out + self.shortcut(x))
-            normal_out = F.relu(normal_out + self.shortcut(x))
+            adapter_out_clean = F.relu(adapter_out_clean + self.shortcut(x_adapter[0]))
+            adapter_out_adv = F.relu(adapter_out_adv + self.shortcut(x_adapter[1]))
+            normal_out = F.relu(normal_out + self.shortcut(x_normal))
 
             # out = F.relu(self.shortcut(x) + self.bn2(self.adapter(self.conv2(F.relu(self.bn1(self.conv1(x)))))))
-            return normal_out, adapter_out
+            return [adapter_out_clean, adapter_out_adv], normal_out
         else:
-            out = F.relu(self.bn1(self.conv1(x)))
+            out = F.relu(self.bn1(self.conv1(x_adapter)))
             out = self.bn2(self.conv2(out))
-            out += self.shortcut(x)
+            out += self.shortcut(x_adapter)
             out = F.relu(out)
             return out
 
