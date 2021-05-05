@@ -389,7 +389,7 @@ def vit_small_patch16_224_adapter(pretrained=False, **kwargs):
 
 
 @register_model
-def vit_base_patch16_224_in21k(pretrained=False, **kwargs):
+def vit_base_patch16_224_in21k_adapter(pretrained=False, **kwargs):
     """ ViT-Base model (ViT-B/16) from original paper (https://arxiv.org/abs/2010.11929).
     ImageNet-21k weights @ 224x224, source https://github.com/google-research/vision_transformer.
     """
