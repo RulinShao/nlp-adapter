@@ -287,7 +287,7 @@ class VisionTransformer(nn.Module):
             self.norm.requires_grad = True
 
         for name, param in self.named_parameters():
-            if 'adapter' not in name and (len(name.split('.')[1]) > 1 and name.split('.')[1] in act_layer):
+            if 'adapter' not in name and (len(name.split('.')) > 1 and name.split('.')[1] in act_layer):
                 param.requires_grad = True
             else:
                 param.requires_grad = False
