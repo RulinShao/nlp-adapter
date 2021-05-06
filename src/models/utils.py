@@ -156,7 +156,7 @@ def save_model(model, best_acc1, curr_acc1, run_base_dir, idx):
                     "epoch": args.epochs,
                     "arch": args.model,
                     "state_dict": {k: v for k, v in model.state_dict().items()
-                                   if ('head' in k) or ('norm.' in k) or (k.split('.')[1] in act_layer and 'adapter' not in k)},
+                                   if ('head' in k) or ('norm.' in k) or (len(k.split('.'))>1 and k.split('.')[1] in act_layer and 'adapter' not in k)},
                     "curr_acc1": curr_acc1,
                     "args": args,
                 },
