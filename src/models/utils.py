@@ -7,18 +7,12 @@ from timm.models import load_checkpoint, create_model
 import models.vit
 
 
-def get_backbone(head_dim=1000//args.num_tasks, no_head=False):
+def get_backbone():
     # Get the model.
     model = create_model(args.model_name,
                          pretrained=args.pretrained,
                          num_classes=1000,
                          in_chans=3, )
-    if not no_head:
-        if hasattr(model, "module"):
-            model.module.set_head(new_head=head_dim)
-        else:
-            model.set_head(new_head=head_dim)
-
     return model
 
 
@@ -92,12 +86,14 @@ def modify_model(model, task_length):
             model.module.set_adapter(new_head=task_length)
         else:
             model.set_adapter(new_head=task_length)
-    elif args.train_head:
-        # set_head() will automatically remove the dapter layers.
+    elif args.train_layer:
+        # set_layer() will automatically remove the dapter layers.
+        assert args.train_layer >= 0;
+        "invalid number of trainable layers"
         if hasattr(model, "module"):
-            model.module.set_head(new_head=task_length)
+            model.module.set_layer(layer_num=args.train_layer, new_head=task_length)
         else:
-            model.set_head(new_head=task_length)
+            model.set_layer(layer_num=args.train_layer, new_head=task_length)
     else:
         if hasattr(model, "module"):
             model.module.remove_adapter()
@@ -107,3 +103,62 @@ def modify_model(model, task_length):
             model.reset_classifier(num_classes=task_length)
 
     return model
+
+
+def save_model(model, best_acc1, curr_acc1, run_base_dir, idx):
+    if args.save == "full":
+        torch.save(
+            {
+                "epoch": args.epochs,
+                "arch": args.model,
+                "state_dict": model.state_dict(),
+                "best_acc1": best_acc1,
+                "curr_acc1": curr_acc1,
+                "args": args,
+            },
+            run_base_dir / f"task{idx}_full_final.pt",
+        )
+    elif args.save == "adapter":
+        torch.save(
+            {
+                "epoch": args.epochs,
+                "arch": args.model,
+                "state_dict": {k: v for k, v in model.state_dict().items()
+                               if 'bn' in k or 'adapter' in k or 'head' in k},
+                "curr_acc1": curr_acc1,
+                "args": args,
+            },
+            run_base_dir / f"task{idx}_adapter_final.pt",
+        )
+    elif args.save == "layer":
+        assert args.train_layer >= 0;
+        "invalid number of trainable layers"
+        if args.train_layer > 0:
+            act_layer = ''
+            # TODO: add depth to args.py and replace 8 with args.depth when other models introduced
+            for i in range(args.train_layer):
+                act_layer += str(8 - i)
+        if args.train_layer == 0:
+            torch.save(
+                {
+                    "epoch": args.epochs,
+                    "arch": args.model,
+                    "state_dict": {k: v for k, v in model.state_dict().items()
+                                   if 'head' in k},
+                    "curr_acc1": curr_acc1,
+                    "args": args,
+                },
+                run_base_dir / f"task{idx}_head_final.pt",
+            )
+        else:
+            torch.save(
+                {
+                    "epoch": args.epochs,
+                    "arch": args.model,
+                    "state_dict": {k: v for k, v in model.state_dict().items()
+                                   if ('head' in k) or ('norm.' in k) or (k.split('.')[1] in act_layer and 'adapter' not in k)},
+                    "curr_acc1": curr_acc1,
+                    "args": args,
+                },
+                run_base_dir / f"task{idx}_head_final.pt",
+            )

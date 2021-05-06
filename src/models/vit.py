@@ -199,7 +199,9 @@ class VisionTransformer(nn.Module):
         self.num_classes = num_classes
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
         self.num_tokens = 1
+        self.depth = depth
         self.use_adapter = use_adapter
+
         norm_layer = norm_layer or partial(nn.LayerNorm, eps=1e-6)
         act_layer = act_layer or nn.GELU
 
@@ -273,16 +275,27 @@ class VisionTransformer(nn.Module):
             self.reset_classifier(new_head)
             self.head.requires_grad = True
 
-    def set_head(self, new_head=None):
+    def set_layer(self, layer_num=0, new_head=None):
         # Remove adapter layers.
         # Set the head layer trainable
         # Reset the head layer when dimension of new head is given
         self.remove_adapter()
+        if layer_num > 0:
+            act_layer = ''
+            for i in range(layer_num):
+                act_layer += str(self.depth - i)
+            self.norm.requires_grad = True
+
         for name, param in self.named_parameters():
-            param.requires_grad = False
+            if 'adapter' not in name and name.split('.')[1] in act_layer:
+                param.requires_grad = True
+            else:
+                param.requires_grad = False
+
         if new_head:
             self.reset_classifier(new_head)
         self.head.requires_grad = True
+
 
     def remove_adapter(self):
         self.use_adapter = False

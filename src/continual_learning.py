@@ -52,7 +52,7 @@ def main():
     task_length = 1000 // args.num_tasks
 
     # Get the backbone model with a new head layer.
-    model = get_backbone(head_dim=task_length, no_head=False)
+    model = get_backbone()
     model = modify_model(model, task_length)
 
     # Put the model on the GPU,
@@ -75,99 +75,6 @@ def main():
     print(f"=> Using trainer {trainer}")
 
     train, test = trainer.train, trainer.test
-
-    # # TODO: Put this in another file
-    # if args.task_eval is not None:
-    #     assert 0 <= args.task_eval < args.num_tasks, "Not a valid task idx"
-    #     print(f"Task {args.set}: {args.task_eval}")
-    #
-    #     model.apply(lambda m: setattr(m, "task", args.task_eval))
-    #
-    #     assert hasattr(
-    #         data_loader, "update_task"
-    #     ), "[ERROR] Need to implement update task method for use with multitask experiments"
-    #
-    #     data_loader.update_task(args.task_eval)
-    #
-    #     optimizer = get_optimizer(args, model)
-    #     lr_scheduler = schedulers.get_policy(args.lr_policy or "cosine_lr")(
-    #         optimizer, args
-    #     )
-    #
-    #     # Train and do inference and normal for args.epochs epcohs.
-    #     best_acc1 = 0.0
-    #
-    #     for epoch in range(0, args.epochs):
-    #         lr_scheduler(epoch, None)
-    #
-    #         train(
-    #             model,
-    #             writer,
-    #             data_loader.train_loader,
-    #             optimizer,
-    #             criterion,
-    #             epoch,
-    #             task_idx=args.task_eval,
-    #             data_loader=None,
-    #         )
-    #
-    #         curr_acc1 = test(
-    #             model,
-    #             writer,
-    #             criterion,
-    #             data_loader.val_loader,
-    #             epoch,
-    #             task_idx=args.task_eval,
-    #         )
-    #
-    #         if curr_acc1 > best_acc1:
-    #             best_acc1 = curr_acc1
-    #
-    #     utils.write_result_to_csv(
-    #         name=f"{args.name}~set={args.set}~task={args.task_eval}",
-    #         curr_acc1=curr_acc1,
-    #         best_acc1=best_acc1,
-    #         save_dir=run_base_dir,
-    #     )
-    #
-    #     if args.save == "full":
-    #         torch.save(
-    #             {
-    #                 "epoch": args.epochs,
-    #                 "arch": args.model,
-    #                 "state_dict": model.state_dict(),
-    #                 "best_acc1": best_acc1,
-    #                 "curr_acc1": curr_acc1,
-    #                 "args": args,
-    #             },
-    #             run_base_dir / f"task{args.task_eval}_full_final.pt",
-    #         )
-    #     elif args.save == "adapter":
-    #         torch.save(
-    #             {
-    #                 "epoch": args.epochs,
-    #                 "arch": args.model,
-    #                 "state_dict": {k: v for k, v in model.state_dict().items()
-    #                               if 'bn' in k or 'adapter' in k or 'head' in k},
-    #                 "curr_acc1": curr_acc1,
-    #                 "args": args,
-    #             },
-    #             run_base_dir / f"task{args.task_eval}_adapter_final.pt",
-    #         )
-    #     elif args.save == "head":
-    #         torch.save(
-    #             {
-    #                 "epoch": args.epochs,
-    #                 "arch": args.model,
-    #                 "state_dict": {k: v for k, v in model.state_dict().items()
-    #                                if 'head' in k},
-    #                 "curr_acc1": curr_acc1,
-    #                 "args": args,
-    #             },
-    #             run_base_dir / f"task{args.task_eval}_adapter_final.pt",
-    #         )
-    #
-    #     return best_acc1
 
     # Iterate through all tasks.
     for idx in range(args.num_tasks or 0):
