@@ -302,9 +302,6 @@ class VisionTransformer(nn.Module):
                     else:
                         param.requires_grad = False
 
-
-
-
     def remove_adapter(self):
         self.use_adapter = False
 
