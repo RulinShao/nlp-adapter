@@ -86,7 +86,7 @@ def modify_model(model, task_length):
             model.module.set_adapter(new_head=task_length)
         else:
             model.set_adapter(new_head=task_length)
-    elif args.train_layer:
+    elif args.train_layer >= 0:
         # set_layer() will automatically remove the dapter layers.
         assert args.train_layer >= 0;
         "invalid number of trainable layers"
@@ -165,7 +165,10 @@ def save_model(model, best_acc1, curr_acc1, run_base_dir, idx):
 
 
 def count_trainable_parameters(model):
-    count = sum(p.numel() for p in model.paramters() if p.requires_grad)
+    if not args.train_adapter:
+        count = sum(p.numel() for n, p in model.named_parameters() if p.requires_grad and 'adapter' not in n)
+    else:
+        count = sum(p.numel() for n, p in model.named_parameters() if p.requires_grad)
     print(f"Number of trainable parameters: {count}")
     return count
 
@@ -173,4 +176,4 @@ def count_trainable_parameters(model):
 if __name__ == "__main__":
     model = get_backbone()
     model = modify_model(model, 1000//args.num_tasks)
-    count_trainable_parameters(model)
+    count  = count_trainable_parameters(model)
