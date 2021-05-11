@@ -281,8 +281,12 @@ class VisionTransformer(nn.Module):
         # Reset the head layer when dimension of new head is given
         self.remove_adapter()
 
+        for name, param in self.named_parameters():
+            param.requires_grad = False
+
         if new_head:
             self.reset_classifier(new_head)
+
         # layer_num >= 0
         self.head.requires_grad = True
 
@@ -299,8 +303,6 @@ class VisionTransformer(nn.Module):
                 for name, param in self.named_parameters():
                     if 'adapter' not in name and (len(name.split('.')) > 1 and name.split('.')[1] in act_layer):
                         param.requires_grad = True
-                    else:
-                        param.requires_grad = False
 
     def remove_adapter(self):
         self.use_adapter = False
