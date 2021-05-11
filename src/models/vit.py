@@ -289,16 +289,21 @@ class VisionTransformer(nn.Module):
 
         # layer_num >= 0
         self.head.requires_grad = True
+        self.head.weight.requires_grad=True
+        self.head.bias.requires_grad = True
 
         act_layer = []
         if layer_num > 0:
             # layer_num >= 1
             self.norm.requires_grad = True
-            self.pre_logits.requires_grad = True
+            self.pre_logits.fc.requires_grad = True
+            self.pre_logits.weight.requires_grad = True
+            self.pre_logits.bias.requires_grad = True
 
             # layer_num >= 2
             if layer_num > 1:
                 for i in range(layer_num):
+                    assert i <= self.depth; "Exceed maximum layers"
                     act_layer.append(str(self.depth-i))
                 for name, param in self.named_parameters():
                     if 'adapter' not in name and (len(name.split('.')) > 1 and name.split('.')[1] in act_layer):
