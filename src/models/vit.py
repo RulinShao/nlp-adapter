@@ -282,9 +282,11 @@ class VisionTransformer(nn.Module):
         self.remove_adapter()
         act_layer = []
         if layer_num > 0:
-            for i in range(layer_num):
-                act_layer.append(str(self.depth-1-i))
             self.norm.requires_grad = True
+            self.pre_logits.requires_grad = True
+            if layer_num > 1:
+                for i in range(layer_num):
+                    act_layer.append(str(self.depth-i))
 
         for name, param in self.named_parameters():
             if 'adapter' not in name and (len(name.split('.')) > 1 and name.split('.')[1] in act_layer):
