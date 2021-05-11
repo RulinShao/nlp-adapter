@@ -166,9 +166,15 @@ def save_model(model, best_acc1, curr_acc1, run_base_dir, idx):
 
 def count_trainable_parameters(model):
     if not args.train_adapter:
-        count = sum(p.numel() for n, p in model.named_parameters() if p.requires_grad and 'adapter' not in n)
+        count = sum(p.numel() for n, p in model.named_parameters() if p.requires_grad)
+        for n, p in model.named_parameters():
+            if p.requires_grad:
+                print(n)
     else:
         count = sum(p.numel() for n, p in model.named_parameters() if p.requires_grad)
+        for n, p in model.named_parameters():
+            if p.requires_grad:
+                print(n)
     print(f"Number of trainable parameters: {count}")
     return count
 

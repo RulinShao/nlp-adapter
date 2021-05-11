@@ -280,10 +280,10 @@ class VisionTransformer(nn.Module):
         # Set the head layer trainable
         # Reset the head layer when dimension of new head is given
         self.remove_adapter()
-        act_layer = ''
+        act_layer = []
         if layer_num > 0:
             for i in range(layer_num):
-                act_layer += str(self.depth - i)
+                act_layer.append(str(self.depth-1-i))
             self.norm.requires_grad = True
 
         for name, param in self.named_parameters():
