@@ -162,3 +162,15 @@ def save_model(model, best_acc1, curr_acc1, run_base_dir, idx):
                 },
                 run_base_dir / f"task{idx}_head_final.pt",
             )
+
+
+def count_trainable_parameters(model):
+    count = sum(p.numel() for p in model.paramters() if p.requires_grad)
+    print(f"Number of trainable parameters: {count}")
+    return count
+
+
+if __name__ == "__main__":
+    model = get_backbone()
+    model = modify_model(model, 1000//args.num_tasks)
+    count_trainable_parameters(model)
