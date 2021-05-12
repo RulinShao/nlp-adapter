@@ -89,7 +89,10 @@ def main():
 
         # Set alpha for the current task
         if args.capacity:
-            alpha = torch.ones((model.depth, 2, model.capacity))
+            if hasattr(model, "module"):
+                alpha = torch.ones((model.module.depth, 2, model.capacity))
+            else:
+                alpha = torch.ones((model.depth, 2, model.capacity))
         else:
             alpha = None
         # TODO: forward trainable alpha and set alpha for model
