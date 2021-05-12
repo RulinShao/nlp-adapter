@@ -141,10 +141,10 @@ class Block(nn.Module):
                 # TODO: normalize alpha for fair comparison?
                 x = self.drop_path(self.attn(self.norm1(x)))
                 for i in range(self.capacity):
-                    x = x + alpha[0][i] * self.adapter1[i](x)
+                    x = x + (alpha[0][i]/self.capacity) * self.adapter1[i](x)
                 x = self.drop_path(self.mlp(self.norm2(x)))
                 for i in range(self.capacity):
-                    x = x + alpha[1][i] * self.adapter2[i](x)
+                    x = x + (alpha[1][i]/self.capacity) * self.adapter2[i](x)
             else:
                 x = x + self.adapter1(self.drop_path(self.attn(self.norm1(x))))
                 x = x + self.adapter2(self.drop_path(self.mlp(self.norm2(x))))
@@ -215,6 +215,7 @@ class VisionTransformer(nn.Module):
         self.depth = depth
         self.use_adapter = use_adapter
         self.capacity = capacity
+        self.alpha = None
 
         norm_layer = norm_layer or partial(nn.LayerNorm, eps=1e-6)
         act_layer = act_layer or nn.GELU
@@ -280,15 +281,17 @@ class VisionTransformer(nn.Module):
         # Set adapter and norm layers trainable.
         # Reset the head layer when dimension of new head is given
         self.activate_adapter()
-        # TODO: blocks not appear in named_parameters
-        # for name, param in self.named_parameters():
-        #     if 'adapter' in name or 'norm' in name:
-        #         param.requires_grad = True
-        #     else:
-        #         param.requires_grad = False
+        for name, param in self.named_parameters():
+            if 'adapter' in name or 'norm' in name:
+                param.requires_grad = True
+            else:
+                param.requires_grad = False
         if new_head:
             self.reset_classifier(new_head)
             self.head.requires_grad = True
+
+    def set_alpha(self, alpha):
+        self.alpha = alpha
 
     def set_layer(self, layer_num=0, new_head=None):
         # Remove adapter layers.
@@ -331,13 +334,15 @@ class VisionTransformer(nn.Module):
         self.use_adapter = True
 
     def forward_features(self, x, alpha=None):
+        if not alpha and self.alpha:
+            alpha = self.alpha
         x = self.patch_embed(x)
-        cls_token = self.cls_token.expand(x.shape[0], -1, -1)  # stole cls_tokens impl from Phil Wang, thanks
+        cls_token = self.cls_token.expand(x.shape[0], -1, -1)
         x = torch.cat((cls_token, x), dim=1)
         x = self.pos_drop(x + self.pos_embed)
         for i in range(self.depth):
-            assert int(alpha.size()[0]) == self.capacity
             if self.capacity:
+                assert int(alpha.size()[0]) == self.depth
                 x = self.blocks[i](x, alpha[i])
             else:
                 x = self.blocks[i](x)

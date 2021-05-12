@@ -79,27 +79,34 @@ def main():
     for idx in range(args.num_tasks or 0):
         print(f"Task {args.set}: {idx}")
 
-        if args.capacity:
-            alpha = torch.tensor(model.depth, 2, model.capacity)
-        else:
-            alpha = None
-
         # Update the data loader so that it returns the data for the correct task, also done by passing the task index.
         assert hasattr(
             data_loader, "update_task"
         ), "[ERROR] Need to implement update task method for use with multitask experiments"
 
         data_loader.update_task(idx)
-
-        # Get the model modified for the specific task and trainable params.
-        # TODO:
-        #  1. return best_acc1 when resuming from a ckpt.
-        #  2. load test related adapters when resume.
         model, params = get_task_model(model, num_tasks_learned, idx)
 
-        # train_weight_tasks specifies the number of tasks that the weights are trained for.
-        # e.g. in SupSup, train_weight_tasks = 0. in BatchE, train_weight_tasks = 1.
-        # If training weights, use train_weight_lr. Else use lr.
+        # Set alpha for the current task
+        if args.capacity:
+            alpha = torch.ones((model.depth, 2, model.capacity))
+        else:
+            alpha = None
+        # TODO: forward trainable alpha and set alpha for model
+        alpha.requires_grad_()
+
+        for batch_idx, (data, target) in enumerate(data_loader.val_loader):
+            data, target = data.to(args.device), target.to(args.device)
+            with torch.enable_grad():
+                loss_alpha = criterion(model(data, alpha), target)
+            grad = torch.autograd.grad(loss_alpha, [alpha])[0]
+            print(grad)
+            break
+
+        model.set_alpha(torch.sign(grad.detach()))
+        del grad
+
+
         lr = (
             args.train_weight_lr
             if args.train_weight_tasks < 0
@@ -255,13 +262,13 @@ def get_optimizer(args, model):
 
 
 if __name__ == "__main__":
-    # main()
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-    # Load pretrained model
-    model = create_model(args.model_name,
-                         pretrained=True,
-                         num_classes=1000,
-                         in_chans=3, )
-    model.eval().to(device)
-    print(dict(model.named_parameters()).keys())
+    main()
+    # device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    #
+    # # Load pretrained model
+    # model = create_model(args.model_name,
+    #                      pretrained=True,
+    #                      num_classes=1000,
+    #                      in_chans=3, )
+    # model.eval().to(device)
+    # print(dict(model.named_parameters()).keys())

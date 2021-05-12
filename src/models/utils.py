@@ -23,6 +23,10 @@ def get_task_model(model, num_tasks_learned, idx):
     :param task_length:
     :return:
     """
+    # TODO:
+    #  1. return best_acc1 when resuming from a ckpt.
+    #  2. load test related adapters when resume.
+
     # modify_model(model, idx, task_length)
 
     # Tell the model which task it is trying to solve -- in Scenario NNs this is ignored.
