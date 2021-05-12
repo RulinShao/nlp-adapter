@@ -21,6 +21,7 @@ from models.utils import get_backbone, get_task_model, modify_model
 from timm.models import load_checkpoint, create_model
 import models.avit
 
+
 def main():
     if args.seed is not None:
         random.seed(args.seed)

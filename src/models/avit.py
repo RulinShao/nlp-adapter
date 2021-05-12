@@ -459,6 +459,7 @@ def main():
                          in_chans=3,)
     model.eval().to(device)
     print(dict(model.named_parameters()).keys())
+    print(model.depth)
 
 
 if __name__ == '__main__':
