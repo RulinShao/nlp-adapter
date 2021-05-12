@@ -315,8 +315,8 @@ class VisionTransformer(nn.Module):
             # layer_num >= 1
             self.norm.requires_grad = True
             self.pre_logits.fc.requires_grad = True
-            self.pre_logits.weight.requires_grad = True
-            self.pre_logits.bias.requires_grad = True
+            self.pre_logits.fc.weight.requires_grad = True
+            self.pre_logits.fc.bias.requires_grad = True
 
             # layer_num >= 2
             if layer_num > 1:
