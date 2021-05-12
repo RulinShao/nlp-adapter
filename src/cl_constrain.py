@@ -88,18 +88,20 @@ def main():
         model, params = get_task_model(model, num_tasks_learned, idx)
 
         # Set alpha for the current task
+        print(f"=> Initializing alpha to size of {(model.module.depth, 2, model.module.capacity)}")
         if args.capacity:
             if hasattr(model, "module"):
-                alpha = torch.ones((model.module.depth, 2, model.module.capacity))
+                alpha = torch.ones((model.module.depth, 2, model.module.capacity)).to(args.device)
             else:
-                alpha = torch.ones((model.depth, 2, model.capacity))
+                alpha = torch.ones((model.depth, 2, model.capacity)).to(args.device)
         else:
             alpha = None
         # TODO: forward trainable alpha and set alpha for model
         alpha.requires_grad_()
 
         for batch_idx, (data, target) in enumerate(data_loader.val_loader):
-            data, target, alpha = data.to(args.device), target.to(args.device), alpha.to(args.device)
+            data, target= data.to(args.device), target.to(args.device)
+            print(data.size)
             with torch.enable_grad():
                 loss_alpha = criterion(model(data, alpha), target)
             grad = torch.autograd.grad(loss_alpha, [alpha])[0]
