@@ -90,7 +90,7 @@ def main():
         # Set alpha for the current task
         if args.capacity:
             if hasattr(model, "module"):
-                alpha = torch.ones((model.module.depth, 2, model.capacity))
+                alpha = torch.ones((model.module.depth, 2, model.module.capacity))
             else:
                 alpha = torch.ones((model.depth, 2, model.capacity))
         else:
@@ -105,8 +105,10 @@ def main():
             grad = torch.autograd.grad(loss_alpha, [alpha])[0]
             print(grad)
             break
-
-        model.set_alpha(torch.sign(grad.detach()))
+        if hasattr(model, "module"):
+            model.module.set_alpha(torch.sign(grad.detach()))
+        else:
+            model.set_alpha(torch.sign(grad.detach()))
         del grad
 
 
