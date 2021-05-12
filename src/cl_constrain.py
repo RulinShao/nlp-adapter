@@ -12,7 +12,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.tensorboard import SummaryWriter
 
 from args import args
-import data
+import data as data_
 import trainers
 import utils
 from models.utils import get_backbone, get_task_model, modify_model
@@ -46,7 +46,7 @@ def main():
     print(f"=> Saving data in {run_base_dir}")
 
     # Get dataloader.
-    data_loader = getattr(data, args.set)()
+    data_loader = getattr(data_, args.set)()
 
     task_length = 1000 // args.num_tasks
 
