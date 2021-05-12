@@ -30,7 +30,7 @@ def parse_arguments():
         "--train_adapter", type=bool, default=False, help="Train the adapter and norm layers only"
     )
     parser.add_argument(
-        "--adapter_capacity", type=int, default=2, help="The maximum of the number of adapters can be added."
+        "--capacity", type=int, default=2, help="The maximum of the number of adapters can be added."
     )
     parser.add_argument(
         "--train_layer", type=int, default=1, help="Train the last n layers. 0 for the head layer only."

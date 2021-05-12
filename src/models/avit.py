@@ -124,11 +124,8 @@ class Block(nn.Module):
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         if self.capacity:
             assert self.capacity > 0; "Invalid capacity for adapters."
-            self.adapter1 = []
-            self.adapter2 = []
-            for i in range(self.capacity):
-                self.adapter1.append(BasicAdapter(in_features=dim, act_layer=act_layer))
-                self.adapter2.append(BasicAdapter(in_features=dim, act_layer=act_layer))
+            self.adapter1 = nn.ModuleList([BasicAdapter(in_features=dim, act_layer=act_layer) for i in range(self.capacity)])
+            self.adapter2 = nn.ModuleList([BasicAdapter(in_features=dim, act_layer=act_layer) for i in range(self.capacity)])
         else:
             self.adapter1 = BasicAdapter(in_features=dim, act_layer=act_layer)
             self.adapter2 = BasicAdapter(in_features=dim, act_layer=act_layer)
@@ -231,12 +228,12 @@ class VisionTransformer(nn.Module):
         self.pos_drop = nn.Dropout(p=drop_rate)
 
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
-        self.blocks = [
+        self.blocks = nn.ModuleList([
             Block(
                 dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
                 drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer, act_layer=act_layer,
                 use_adapter=self.use_adapter, capacity=self.capacity)
-            for i in range(depth)]
+            for i in range(depth)])
         self.norm = norm_layer(embed_dim)
 
         # Representation layer
@@ -283,11 +280,12 @@ class VisionTransformer(nn.Module):
         # Set adapter and norm layers trainable.
         # Reset the head layer when dimension of new head is given
         self.activate_adapter()
-        for name, param in self.named_parameters():
-            if 'adapter' in name or 'norm' in name:
-                param.requires_grad = True
-            else:
-                param.requires_grad = False
+        # TODO: blocks not appear in named_parameters
+        # for name, param in self.named_parameters():
+        #     if 'adapter' in name or 'norm' in name:
+        #         param.requires_grad = True
+        #     else:
+        #         param.requires_grad = False
         if new_head:
             self.reset_classifier(new_head)
             self.head.requires_grad = True

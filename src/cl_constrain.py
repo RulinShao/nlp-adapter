@@ -79,6 +79,11 @@ def main():
     for idx in range(args.num_tasks or 0):
         print(f"Task {args.set}: {idx}")
 
+        if args.capacity:
+            alpha = torch.tensor(model.depth, 2, model.capacity)
+        else:
+            alpha = None
+
         # Update the data loader so that it returns the data for the correct task, also done by passing the task index.
         assert hasattr(
             data_loader, "update_task"
