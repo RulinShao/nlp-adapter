@@ -99,7 +99,7 @@ def main():
         alpha.requires_grad_()
 
         for batch_idx, (data, target) in enumerate(data_loader.val_loader):
-            data, target = data.to(args.device), target.to(args.device)
+            data, target, alpha = data.to(args.device), target.to(args.device), alpha.to(args.device)
             with torch.enable_grad():
                 loss_alpha = criterion(model(data, alpha), target)
             grad = torch.autograd.grad(loss_alpha, [alpha])[0]
