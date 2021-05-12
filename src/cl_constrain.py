@@ -88,7 +88,7 @@ def main():
         model, params = get_task_model(model, num_tasks_learned, idx)
 
         # Set alpha for the current task
-        print(f"=> Initializing alpha to size of {(model.module.depth, 2, model.module.capacity)}")
+        print(f"=> Initializing alpha to size of {(model.module.depth, 2, model.module.capacity)}..")
         if args.capacity:
             if hasattr(model, "module"):
                 alpha = torch.ones((model.module.depth, 2, model.module.capacity)).to(args.device)
@@ -101,17 +101,17 @@ def main():
 
         for batch_idx, (data, target) in enumerate(data_loader.val_loader):
             data, target= data.to(args.device), target.to(args.device)
-            print(data.size)
-            with torch.enable_grad():
-                loss_alpha = criterion(model(data, alpha), target)
-            grad = torch.autograd.grad(loss_alpha, [alpha])[0]
-            print(grad)
+            print(f"=> Using {int(data.size()[0])} images for alpha inference..")
+            loss_alpha = criterion(model(data, alpha), target)
+            loss_alpha.backward()
+            # grad = torch.autograd.grad(loss_alpha, [alpha])[0]
+            print(alpha.grad)
             break
         if hasattr(model, "module"):
-            model.module.set_alpha(torch.sign(grad.detach()))
+            model.module.set_alpha(torch.sign(alpha.grad.detach()))
         else:
-            model.set_alpha(torch.sign(grad.detach()))
-        del grad
+            model.set_alpha(torch.sign(alpha.grad.detach()))
+        alpha.grad = None
 
 
         lr = (
