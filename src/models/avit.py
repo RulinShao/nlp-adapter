@@ -334,8 +334,6 @@ class VisionTransformer(nn.Module):
         self.use_adapter = True
 
     def forward_features(self, x, alpha=None):
-        if not alpha and self.alpha:
-            alpha = self.alpha
         x = self.patch_embed(x)
         cls_token = self.cls_token.expand(x.shape[0], -1, -1)
         x = torch.cat((cls_token, x), dim=1)
@@ -349,8 +347,10 @@ class VisionTransformer(nn.Module):
         x = self.norm(x)
         return self.pre_logits(x[:, 0])
 
-    def forward(self, x):
-        x = self.forward_features(x)
+    def forward(self, x, alpha=None):
+        if alpha is None and self.alpha is not None:
+            alpha = self.alpha
+        x = self.forward_features(x, alpha)
         x = self.head(x)
         return x
 

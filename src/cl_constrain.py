@@ -102,7 +102,7 @@ def main():
         for batch_idx, (data, target) in enumerate(data_loader.val_loader):
             data, target= data.to(args.device), target.to(args.device)
             print(f"=> Using {int(data.size()[0])} images for alpha inference..")
-            loss_alpha = criterion(model(data, alpha), target)
+            loss_alpha = criterion(model.module(data, alpha), target)
             loss_alpha.backward()
             # grad = torch.autograd.grad(loss_alpha, [alpha])[0]
             print(alpha.grad)
