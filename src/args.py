@@ -27,16 +27,16 @@ def parse_arguments():
         "--pretrained", type=bool, default=True, help="whether use a pretrained model as the backbone"
     )
     parser.add_argument(
-        "--train_adapter", type=bool, default=False, help="Train the adapter and norm layers only"
+        "--train_adapter", type=bool, default=True, help="Train the adapter and norm layers only"
     )
     parser.add_argument(
         "--capacity", type=int, default=2, help="The maximum of the number of adapters can be added."
     )
     parser.add_argument(
-        "--train_layer", type=int, default=1, help="Train the last n layers. 0 for the head layer only."
+        "--train_layer", type=int, default=-1, help="Train the last n layers. 0 for the head layer only."
     )
     parser.add_argument(
-        "--save", type=str, default="layer", choices=["full", "adapter, head", "layer"], help="save full checkpoints if full, save only tranable parameter is partial"
+        "--save", type=str, default="adapter", choices=["full", "adapter", "head", "layer"], help="save full checkpoints if full, save only tranable parameter is partial"
     )
     parser.add_argument(
         "--train-weight-tasks",
