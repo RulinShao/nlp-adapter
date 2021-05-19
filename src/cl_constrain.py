@@ -73,7 +73,7 @@ def main():
     trainer = getattr(trainers, args.trainer or "default")
     print(f"=> Using trainer {trainer}")
 
-    train, test = trainer.train, trainer.test
+    train, test, infer = trainer.train, trainer.test, trainer.infer
 
     # Iterate through all tasks.
     for idx in range(args.num_tasks or 0):
@@ -87,33 +87,9 @@ def main():
         data_loader.update_task(idx)
         model, params = get_task_model(model, num_tasks_learned, idx)
 
-        # Set alpha for the current task
-        print(f"=> Initializing alpha to size of {(model.module.depth, 2, model.module.capacity)}..")
-        if args.capacity:
-            if hasattr(model, "module"):
-                alpha = torch.ones((model.module.depth, 2, model.module.capacity)).to(args.device)
-            else:
-                alpha = torch.ones((model.depth, 2, model.capacity)).to(args.device)
-        else:
-            alpha = None
-        # TODO: forward trainable alpha and set alpha for model
-        alpha.requires_grad_()
+        infer(model, writer, criterion, data_loader.train_loader)
 
-        for batch_idx, (data, target) in enumerate(data_loader.val_loader):
-            data, target= data.to(args.device), target.to(args.device)
-            print(f"=> Using {int(data.size()[0])} images for alpha inference..")
-            loss_alpha = criterion(model.module(data, alpha), target)
-            loss_alpha.backward()
-            # grad = torch.autograd.grad(loss_alpha, [alpha])[0]
-            print(alpha.grad)
-            break
-        if hasattr(model, "module"):
-            model.module.set_alpha(torch.sign(alpha.grad.detach()))
-        else:
-            model.set_alpha(torch.sign(alpha.grad.detach()))
-        alpha.grad = None
-
-
+        # get learning rate
         lr = (
             args.train_weight_lr
             if args.train_weight_tasks < 0
@@ -175,42 +151,7 @@ def main():
             save_dir=run_base_dir,
         )
 
-        if args.save == "full":
-            torch.save(
-                {
-                    "epoch": args.epochs,
-                    "arch": args.model,
-                    "state_dict": model.state_dict(),
-                    "best_acc1": best_acc1,
-                    "curr_acc1": curr_acc1,
-                    "args": args,
-                },
-                run_base_dir / f"task{idx}_full_final.pt",
-            )
-        elif args.save == "adapter":
-            torch.save(
-                {
-                    "epoch": args.epochs,
-                    "arch": args.model,
-                    "state_dict": {k: v for k, v in model.state_dict().items()
-                                  if 'bn' in k or 'adapter' in k or 'head' in k},
-                    "curr_acc1": curr_acc1,
-                    "args": args,
-                },
-                run_base_dir / f"task{idx}_adapter_final.pt",
-            )
-        elif args.save == "head":
-            torch.save(
-                {
-                    "epoch": args.epochs,
-                    "arch": args.model,
-                    "state_dict": {k: v for k, v in model.state_dict().items()
-                                   if 'head' in k},
-                    "curr_acc1": curr_acc1,
-                    "args": args,
-                },
-                run_base_dir / f"task{idx}_adapter_final.pt",
-            )
+        utils.save_ckpt(model, best_acc1, curr_acc1, run_base_dir, idx)
 
         # Save memory by deleting the optimizer and scheduler.
         del optimizer, scheduler, params
@@ -228,44 +169,36 @@ def main():
         else:
             model.apply(lambda m: setattr(m, "num_tasks_learned", num_tasks_learned))
 
+        # Evaluate the performance on prior tasks
+        if num_tasks_learned in args.eval_ckpts or num_tasks_learned == args.num_tasks:
+            avg_acc = 0.0
+            avg_correct = 0.0
+
+            # Settting task to -1 tells the model to infer task identity instead of being given the task.
+            model.apply(lambda m: setattr(m, "task", -1))
+
+            for i in range(num_tasks_learned):
+                print(f"Testing {i}: {args.set} ({i})")
+                # model.apply(lambda m: setattr(m, "task", i))
+
+                # Update the data loader so it is returning data for the right task.
+                data_loader.update_task(i)
+
+                # Clear the stored information -- memory leak happens if not.
+                for p in model.parameters():
+                    p.grad = None
+
+                for b in model.buffers():
+                    b.grad = None
+
+                torch.cuda.empty_cache()
+
+
+
     return adapt_acc1
 
 
-# TODO: Remove this with task-eval
-def get_optimizer(args, model):
-    for n, v in model.named_parameters():
-        if v.requires_grad:
-            print("<DEBUG> gradient to", n)
 
-        if not v.requires_grad:
-            print("<DEBUG> no gradient to", n)
-
-    if args.optimizer == "sgd":
-        parameters = list(model.named_parameters())
-        bn_params = [v for n, v in parameters if ("bn" in n) and v.requires_grad]
-        rest_params = [v for n, v in parameters if ("bn" not in n) and v.requires_grad]
-        optimizer = torch.optim.SGD(
-            [
-                {"params": bn_params, "weight_decay": args.wd, },
-                {"params": rest_params, "weight_decay": args.wd},
-            ],
-            args.lr,
-            momentum=args.momentum,
-            weight_decay=args.wd,
-            nesterov=False,
-        )
-    elif args.optimizer == "adam":
-        optimizer = torch.optim.Adam(
-            filter(lambda p: p.requires_grad, model.parameters()),
-            lr=args.lr,
-            weight_decay=args.wd,
-        )
-    elif args.optimizer == "rmsprop":
-        optimizer = torch.optim.RMSprop(
-            filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr
-        )
-
-    return optimizer
 
 
 if __name__ == "__main__":

@@ -21,7 +21,7 @@ from foolbox.attacks import LinfPGD, FGSM
 import eagerpy as ep
 import torch_dct as dct
 
-from utils.normalize import get_normalize_layer
+from utils_.normalize import get_normalize_layer
 
 
 logger = def_logger.getChild(__name__)
