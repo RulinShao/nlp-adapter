@@ -1,7 +1,6 @@
 import os
 import torch
 from args import args
-import utils_
 
 from timm.models import load_checkpoint, create_model
 import models.vit

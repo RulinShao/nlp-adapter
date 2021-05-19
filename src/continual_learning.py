@@ -16,7 +16,7 @@ from args import args
 import data
 import schedulers
 import trainers
-import utils_
+import utils
 from models.utils import get_backbone, get_task_model, modify_model
 
 
@@ -56,7 +56,7 @@ def main():
     model = modify_model(model, task_length)
 
     # Put the model on the GPU,
-    model = utils_.set_gpu(model)
+    model = utils.set_gpu(model)
 
     # Track accuracy on all tasks.
     if args.num_tasks:
@@ -150,7 +150,7 @@ def main():
             ):
                 break
 
-        utils_.write_result_to_csv(
+        utils.write_result_to_csv(
             name=f"{args.name}~set={args.set}~task={idx}",
             curr_acc1=curr_acc1[idx],
             best_acc1=best_acc1[idx],
