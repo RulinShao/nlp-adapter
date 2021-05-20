@@ -299,12 +299,12 @@ class VisionTransformer(nn.Module):
 
     def train_alpha(self, train_alpha=True):
         if train_alpha:
-            for p in self.parameters():
-                p.requires_grad_(False)
+            # for p in self.parameters():
+            #     p.requires_grad_(False)
             self.alpha.requires_grad_(True)
         else:
-            for p in self.parameters():
-                p.requires_grad_(True)
+            # for p in self.parameters():
+            #     p.requires_grad_(True)
             self.alpha.requires_grad_(False)
 
     def set_layer(self, layer_num=0, new_head=None):

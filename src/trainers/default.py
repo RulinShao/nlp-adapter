@@ -86,7 +86,10 @@ def infer(model, writer, criterion, train_loader):
     #         alpha = torch.ones((model.depth, 2, model.capacity)).to(args.device)
     # else:
     #     alpha = None
-    model.train_alpha(True)
+    if hasattr(model, "module"):
+        model.module.train_alpha(True)
+    else:
+        model.train_alpha(True)
     model.eval()
     grad = torch.zeros_like(model.alpha.data)
     print(f"=> Infering alpha using whole training data..")
