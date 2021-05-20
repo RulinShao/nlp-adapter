@@ -79,13 +79,6 @@ def test(model, writer, criterion, test_loader, epoch, task_idx):
 
 def infer(model, writer, criterion, train_loader):
     print(f"=> Initializing alpha to size of {(model.module.depth, 2, model.module.capacity)}..")
-    # if args.capacity:
-    #     if hasattr(model, "module"):
-    #         alpha = torch.ones((model.module.depth, 2, model.module.capacity)).to(args.device)
-    #     else:
-    #         alpha = torch.ones((model.depth, 2, model.capacity)).to(args.device)
-    # else:
-    #     alpha = None
     model.module.train_alpha(True)
     model.eval()
     grad = torch.zeros_like(model.module.alpha.data)

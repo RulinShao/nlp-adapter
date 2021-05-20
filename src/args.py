@@ -126,7 +126,7 @@ def parse_arguments():
     parser.add_argument("--model", type=str, help="Type of model.")
     parser.add_argument(
         "--eval-ckpts",
-        default=None,
+        default="0,1,2,3,4,5,6,7,8,9,10",
         type=lambda x: [int(a) for a in x.split(",")],
         help="After learning n tasks for n in eval_ckpts we perform evaluation on all tasks learned so far",
     )
