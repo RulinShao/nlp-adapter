@@ -79,79 +79,79 @@ def main():
     for idx in range(args.num_tasks or 0):
         print(f"Task {args.set}: {idx}")
 
-        # # Update the data loader so that it returns the data for the correct task, also done by passing the task index.
-        # assert hasattr(
-        #     data_loader, "update_task"
-        # ), "[ERROR] Need to implement update task method for use with multitask experiments"
-        #
-        # data_loader.update_task(idx)
-        # model, params = get_task_model(model, num_tasks_learned, idx)
-        #
-        # infer(model, writer, criterion, data_loader.train_loader)
-        #
-        # # get learning rate
-        # lr = (
-        #     args.train_weight_lr
-        #     if args.train_weight_tasks < 0
-        #        or num_tasks_learned < args.train_weight_tasks
-        #     else args.lr
-        # )
-        #
-        # # get optimizer, scheduler
-        # if args.optimizer == "adam":
-        #     optimizer = optim.Adam(params, lr=lr, weight_decay=args.wd)
-        # elif args.optimizer == "rmsprop":
-        #     optimizer = optim.RMSprop(params, lr=lr)
-        # else:
-        #     optimizer = optim.SGD(
-        #         params, lr=lr, momentum=args.momentum, weight_decay=args.wd
-        #     )
-        #
-        # train_epochs = args.epochs
-        #
-        # if args.no_scheduler:
-        #     scheduler = None
-        # else:
-        #     scheduler = CosineAnnealingLR(optimizer, T_max=train_epochs)
+        # Update the data loader so that it returns the data for the correct task, also done by passing the task index.
+        assert hasattr(
+            data_loader, "update_task"
+        ), "[ERROR] Need to implement update task method for use with multitask experiments"
 
-        # # Train on the current task.
-        # for epoch in range(1, train_epochs + 1):
-        #     train(
-        #         model,
-        #         writer,
-        #         data_loader.train_loader,
-        #         optimizer,
-        #         criterion,
-        #         epoch,
-        #         idx,
-        #         data_loader,
-        #     )
-        #
-        #     curr_acc1[idx] = test(
-        #         model, writer, criterion, data_loader.val_loader, epoch, idx
-        #     )
-        #     if curr_acc1[idx] > best_acc1[idx]:
-        #         best_acc1[idx] = curr_acc1[idx]
-        #     if scheduler:
-        #         scheduler.step()
-        #
-        #     if (
-        #             args.iter_lim > 0
-        #             and len(data_loader.train_loader) * epoch > args.iter_lim
-        #     ):
-        #         break
-        #
-        # utils.write_result_to_csv(
-        #     name=f"{args.name}~set={args.set}~task={idx}",
-        #     curr_acc1=curr_acc1[idx],
-        #     best_acc1=best_acc1[idx],
-        #     save_dir=run_base_dir,
-        # )
-        #
-        # utils.save_ckpt(model, best_acc1, curr_acc1, run_base_dir, idx)
-        #
-        # # Save memory by deleting the optimizer and scheduler.
-        # del optimizer, scheduler, params
+        data_loader.update_task(idx)
+        model, params = get_task_model(model, num_tasks_learned, idx)
+
+        infer(model, writer, criterion, data_loader.train_loader)
+
+        # get learning rate
+        lr = (
+            args.train_weight_lr
+            if args.train_weight_tasks < 0
+               or num_tasks_learned < args.train_weight_tasks
+            else args.lr
+        )
+
+        # get optimizer, scheduler
+        if args.optimizer == "adam":
+            optimizer = optim.Adam(params, lr=lr, weight_decay=args.wd)
+        elif args.optimizer == "rmsprop":
+            optimizer = optim.RMSprop(params, lr=lr)
+        else:
+            optimizer = optim.SGD(
+                params, lr=lr, momentum=args.momentum, weight_decay=args.wd
+            )
+
+        train_epochs = args.epochs
+
+        if args.no_scheduler:
+            scheduler = None
+        else:
+            scheduler = CosineAnnealingLR(optimizer, T_max=train_epochs)
+
+        # Train on the current task.
+        for epoch in range(1, train_epochs + 1):
+            train(
+                model,
+                writer,
+                data_loader.train_loader,
+                optimizer,
+                criterion,
+                epoch,
+                idx,
+                data_loader,
+            )
+
+            curr_acc1[idx] = test(
+                model, writer, criterion, data_loader.val_loader, epoch, idx
+            )
+            if curr_acc1[idx] > best_acc1[idx]:
+                best_acc1[idx] = curr_acc1[idx]
+            if scheduler:
+                scheduler.step()
+
+            if (
+                    args.iter_lim > 0
+                    and len(data_loader.train_loader) * epoch > args.iter_lim
+            ):
+                break
+
+        utils.write_result_to_csv(
+            name=f"{args.name}~set={args.set}~task={idx}",
+            curr_acc1=curr_acc1[idx],
+            best_acc1=best_acc1[idx],
+            save_dir=run_base_dir,
+        )
+
+        utils.save_ckpt(model, best_acc1, curr_acc1, run_base_dir, idx)
+
+        # Save memory by deleting the optimizer and scheduler.
+        del optimizer, scheduler, params
 
         # Increment the number of tasks learned.
         num_tasks_learned += 1
@@ -167,7 +167,8 @@ def main():
             model.apply(lambda m: setattr(m, "num_tasks_learned", num_tasks_learned))
 
         # Evaluate the performance on prior tasks
-        if num_tasks_learned in args.eval_ckpts or num_tasks_learned == args.num_tasks:
+        # if num_tasks_learned in args.eval_ckpts or num_tasks_learned == args.num_tasks:
+        if num_tasks_learned % args.eval_interval == 0 or num_tasks_learned == args.num_tasks:
             avg_acc = 0.0
 
             # Settting task to -1 tells the model to infer task identity instead of being given the task.
