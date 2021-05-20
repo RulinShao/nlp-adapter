@@ -133,18 +133,18 @@ class Block(nn.Module):
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
-    def forward(self, x):
+    def forward(self, x, alpha=None):
         if self.use_adapter:
             if self.capacity:
-                assert int(self.alpha.size()[1]) == self.capacity; f"Incompatible alpha for limited capacity, expected {self.capacity} got {alpha.size()[1]}"
+                assert int(alpha.size()[1]) == self.capacity; f"Incompatible alpha for limited capacity, expected {self.capacity} got {alpha.size()[1]}"
                 # TODO: add adapters first to save multiplications
                 # TODO: normalize alpha for fair comparison?
                 x = self.drop_path(self.attn(self.norm1(x)))
                 for i in range(self.capacity):
-                    x = x + (self.alpha[0][i]/self.capacity) * self.adapter1[i](x)
+                    x = x + (alpha[0][i]/self.capacity) * self.adapter1[i](x)
                 x = self.drop_path(self.mlp(self.norm2(x)))
                 for i in range(self.capacity):
-                    x = x + (self.alpha[1][i]/self.capacity) * self.adapter2[i](x)
+                    x = x + (alpha[1][i]/self.capacity) * self.adapter2[i](x)
             else:
                 x = x + self.adapter1(self.drop_path(self.attn(self.norm1(x))))
                 x = x + self.adapter2(self.drop_path(self.mlp(self.norm2(x))))
