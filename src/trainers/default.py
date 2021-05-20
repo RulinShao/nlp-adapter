@@ -79,26 +79,26 @@ def test(model, writer, criterion, test_loader, epoch, task_idx):
 
 def infer(model, writer, criterion, train_loader):
     print(f"=> Initializing alpha to size of {(model.module.depth, 2, model.module.capacity)}..")
-    if args.capacity:
-        if hasattr(model, "module"):
-            alpha = torch.ones((model.module.depth, 2, model.module.capacity)).to(args.device)
-        else:
-            alpha = torch.ones((model.depth, 2, model.capacity)).to(args.device)
-    else:
-        alpha = None
-    alpha.requires_grad_(True)
-    grad = torch.zeros_like(alpha)
+    # if args.capacity:
+    #     if hasattr(model, "module"):
+    #         alpha = torch.ones((model.module.depth, 2, model.module.capacity)).to(args.device)
+    #     else:
+    #         alpha = torch.ones((model.depth, 2, model.capacity)).to(args.device)
+    # else:
+    #     alpha = None
+    model.train_alpha(True)
     model.eval()
+    grad = torch.zeros_like(model.alpha.data)
     print(f"=> Infering alpha using whole training data..")
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(args.device), target.to(args.device)
-        loss_alpha = criterion(model(data, alpha), target)
-        grad += torch.autograd.grad(loss_alpha, alpha)[0].detach()
+        loss_alpha = criterion(model(data), target)
+        grad += torch.autograd.grad(loss_alpha, model.alpha)[0].detach()
     del loss_alpha
-    alpha.requires_grad_(False)
-    alpha = nn.functional.softmin(grad, dim=2)
+    new_alpha = nn.functional.softmin(grad, dim=2)
     if hasattr(model, "module"):
-        model.module.set_alpha(alpha)
+        model.module.set_alpha(new_alpha)
     else:
-        model.set_alpha(alpha)
+        model.set_alpha(new_alpha)
+    model.train_alpha(False)
     model.train()

@@ -133,18 +133,18 @@ class Block(nn.Module):
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
-    def forward(self, x, alpha=None):
+    def forward(self, x):
         if self.use_adapter:
             if self.capacity:
-                assert int(alpha.size()[1]) == self.capacity; f"Incompatible alpha for limited capacity, expected {self.capacity} got {alpha.size()[1]}"
+                assert int(self.alpha.size()[1]) == self.capacity; f"Incompatible alpha for limited capacity, expected {self.capacity} got {alpha.size()[1]}"
                 # TODO: add adapters first to save multiplications
                 # TODO: normalize alpha for fair comparison?
                 x = self.drop_path(self.attn(self.norm1(x)))
                 for i in range(self.capacity):
-                    x = x + (alpha[0][i]/self.capacity) * self.adapter1[i](x)
+                    x = x + (self.alpha[0][i]/self.capacity) * self.adapter1[i](x)
                 x = self.drop_path(self.mlp(self.norm2(x)))
                 for i in range(self.capacity):
-                    x = x + (alpha[1][i]/self.capacity) * self.adapter2[i](x)
+                    x = x + (self.alpha[1][i]/self.capacity) * self.adapter2[i](x)
             else:
                 x = x + self.adapter1(self.drop_path(self.attn(self.norm1(x))))
                 x = x + self.adapter2(self.drop_path(self.mlp(self.norm2(x))))
@@ -214,8 +214,12 @@ class VisionTransformer(nn.Module):
         self.num_tokens = 1
         self.depth = depth
         self.use_adapter = use_adapter
-        self.capacity = capacity
-        self.alpha = None
+        if capacity is not None and capacity > 0:
+            self.capacity = capacity
+            self.alpha = nn.Parameter(torch.ones((self.depth, 2, self.capacity)))
+        else:
+            self.capacity = None
+            self.alpha = None
 
         norm_layer = norm_layer or partial(nn.LayerNorm, eps=1e-6)
         act_layer = act_layer or nn.GELU
@@ -291,7 +295,17 @@ class VisionTransformer(nn.Module):
             self.head.requires_grad = True
 
     def set_alpha(self, alpha):
-        self.alpha = alpha
+        self.alpha.data.copy_(alpha)
+
+    def train_alpha(self, train_alpha=True):
+        if train_alpha:
+            for p in self.parameters():
+                p.requires_grad_(False)
+            self.alpha.requires_grad_(True)
+        else:
+            for p in self.parameters():
+                p.requires_grad_(True)
+            self.alpha.requires_grad_(False)
 
     def set_layer(self, layer_num=0, new_head=None):
         # Remove adapter layers.
@@ -333,24 +347,22 @@ class VisionTransformer(nn.Module):
     def activate_adapter(self):
         self.use_adapter = True
 
-    def forward_features(self, x, alpha=None):
+    def forward_features(self, x):
         x = self.patch_embed(x)
         cls_token = self.cls_token.expand(x.shape[0], -1, -1)
         x = torch.cat((cls_token, x), dim=1)
         x = self.pos_drop(x + self.pos_embed)
         for i in range(self.depth):
             if self.capacity:
-                assert int(alpha.size()[0]) == self.depth
-                x = self.blocks[i](x, alpha[i])
+                assert int(self.alpha.size()[0]) == self.depth
+                x = self.blocks[i](x, self.alpha[i])
             else:
                 x = self.blocks[i](x)
         x = self.norm(x)
         return self.pre_logits(x[:, 0])
 
-    def forward(self, x, alpha=None):
-        if alpha is None and self.alpha is not None:
-            alpha = self.alpha
-        x = self.forward_features(x, alpha)
+    def forward(self, x):
+        x = self.forward_features(x)
         x = self.head(x)
         return x
 
