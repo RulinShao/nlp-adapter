@@ -169,7 +169,7 @@ def main():
 
         # Evaluate the performance on prior tasks
         # if num_tasks_learned in args.eval_ckpts or num_tasks_learned == args.num_tasks:
-        if num_tasks_learned % args.eval_interval == 0 or num_tasks_learned == args.num_tasks:
+        if num_tasks_learned % args.eval_interval == 0:
             avg_acc = 0.0
 
             # Settting task to -1 tells the model to infer task identity instead of being given the task.
