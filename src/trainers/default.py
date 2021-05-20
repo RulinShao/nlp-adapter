@@ -86,22 +86,16 @@ def infer(model, writer, criterion, train_loader):
     #         alpha = torch.ones((model.depth, 2, model.capacity)).to(args.device)
     # else:
     #     alpha = None
-    if hasattr(model, "module"):
-        model.module.train_alpha(True)
-    else:
-        model.train_alpha(True)
+    model.module.train_alpha(True)
     model.eval()
-    grad = torch.zeros_like(model.alpha.data)
+    grad = torch.zeros_like(model.module.alpha.data)
     print(f"=> Infering alpha using whole training data..")
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(args.device), target.to(args.device)
         loss_alpha = criterion(model(data), target)
-        grad += torch.autograd.grad(loss_alpha, model.alpha)[0].detach()
+        grad += torch.autograd.grad(loss_alpha, model.module.alpha)[0].detach()
     del loss_alpha
     new_alpha = nn.functional.softmin(grad, dim=2)
-    if hasattr(model, "module"):
-        model.module.set_alpha(new_alpha)
-    else:
-        model.set_alpha(new_alpha)
-    model.train_alpha(False)
+    model.module.set_alpha(new_alpha)
+    model.module.train_alpha(False)
     model.train()
