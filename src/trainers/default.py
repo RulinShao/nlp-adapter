@@ -90,7 +90,7 @@ def infer(model, writer, criterion, train_loader):
     grad = torch.zeros_like(alpha)
     model.eval()
     print(f"=> Infering alpha using whole training data..")
-    for batch_idx, (data, target) in enumerate(train_loader.train_loader):
+    for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(args.device), target.to(args.device)
         loss_alpha = criterion(model(data, alpha), target)
         grad += torch.autograd.grad(loss_alpha, alpha)[0].detach()
