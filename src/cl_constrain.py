@@ -190,7 +190,7 @@ def main():
                 torch.cuda.empty_cache()
 
                 adapt_acc = test(
-                    model, writer, criterion, data_loader.val_loader, epoch, i
+                    model, writer, criterion, data_loader.val_loader, None, i
                 )
 
                 adapt_acc1[i] = adapt_acc

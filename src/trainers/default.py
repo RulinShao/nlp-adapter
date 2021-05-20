@@ -68,6 +68,9 @@ def test(model, writer, criterion, test_loader, epoch, task_idx):
     logit_entropy /= len(test_loader)
     test_acc = float(correct) / len(test_loader.dataset)
 
+    if epoch is None or epoch == -1:
+        return test_acc
+
     print(f"\nTest set: Average loss: {test_loss:.4f}, Accuracy: ({test_acc:.4f})\n")
 
     writer.add_scalar(f"test/task_{task_idx}/loss", test_loss, epoch)
