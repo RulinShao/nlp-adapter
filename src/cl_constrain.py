@@ -171,6 +171,7 @@ def main():
         # if num_tasks_learned in args.eval_ckpts or num_tasks_learned == args.num_tasks:
         if num_tasks_learned % args.eval_interval == 0:
             avg_acc = 0.0
+            avg_bwt = 0.0
 
             # Settting task to -1 tells the model to infer task identity instead of being given the task.
             model.apply(lambda m: setattr(m, "task", -1))
@@ -197,11 +198,15 @@ def main():
 
                 adapt_acc1[i] = adapt_acc
                 avg_acc += adapt_acc
+                avg_bwt += (adapt_acc[i] - curr_acc1[i])
 
                 torch.cuda.empty_cache()
 
             writer.add_scalar(
-                "adapt/avg_acc", avg_acc / num_tasks_learned, num_tasks_learned
+                "cl/avg_acc", avg_acc / num_tasks_learned, num_tasks_learned
+            )
+            writer.add_scalar(
+                "cl/avg_bwt", avg_bwt / (num_tasks_learned - 1), num_tasks_learned
             )
             torch.cuda.empty_cache()
 
