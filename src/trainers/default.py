@@ -80,18 +80,25 @@ def test(model, writer, criterion, test_loader, epoch, task_idx):
     return test_acc
 
 
-def infer(model, writer, criterion, train_loader):
+def infer(model, writer, criterion, train_loader, use_soft=False):
     print(f"=> Initializing alpha to size of {(model.module.depth, 2, model.module.capacity)}..")
     model.module.train_alpha(True)
     model.eval()
     grad = torch.zeros_like(model.module.alpha.data)
     print(f"=> Infering alpha using whole training data..")
     for batch_idx, (data, target) in enumerate(train_loader):
-        data, target = data.to(args.device), target.to(args.device)
-        loss_alpha = criterion(model(data), target)
+        with torch.no_grad():
+            data, target = data.to(args.device), target.to(args.device)
+            loss_alpha = criterion(model(data), target)
         grad += torch.autograd.grad(loss_alpha, model.module.alpha)[0].detach()
     del loss_alpha
     new_alpha = nn.functional.softmin(grad, dim=2)
+    if not use_soft:
+        max_idx = torch.argmax(new_alpha, dim=2)
+        new_alpha = torch.zeros_like(new_alpha)
+        for i in range(new_alpha.size()[0]):
+            for j in range(new_alpha.size()[1]):
+                new_alpha[i][j][max_idx[i][j]] = 1
     model.module.set_alpha(new_alpha)
     model.module.train_alpha(False)
     model.train()

@@ -1,1 +1,0 @@
-python3 kd_main.py --name kd

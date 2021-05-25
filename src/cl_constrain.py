@@ -198,7 +198,7 @@ def main():
 
                 adapt_acc1[i] = adapt_acc
                 avg_acc += adapt_acc
-                avg_bwt += (adapt_acc[i] - curr_acc1[i])
+                avg_bwt += (adapt_acc1[i] - curr_acc1[i])
 
                 torch.cuda.empty_cache()
 

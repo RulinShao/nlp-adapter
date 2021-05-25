@@ -62,6 +62,17 @@ class BasicAdapter(nn.Module):
         return x
 
 
+class MultiAdapter(nn.Module):
+    def __init__(self, num_adapters=1):
+        self.num_adapters = num_adapters
+        self.weight = [nn.Parameter() for _ in range(self.num_adapters)]
+
+    def forward(self, x, alpha):
+        assert len(alpha) == self.num_adapters
+        new_weight = torch.sum(alpha[i] * self.adapter[i].weight for i in range(len(alpha)))
+        return x
+
+
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
