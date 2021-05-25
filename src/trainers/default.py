@@ -95,10 +95,11 @@ def infer(model, writer, criterion, train_loader, use_soft=False):
     new_alpha = nn.functional.softmin(grad, dim=2)
     if not use_soft:
         max_idx = torch.argmax(new_alpha, dim=2)
-        new_alpha = torch.zeros_like(new_alpha)
-        for i in range(new_alpha.size()[0]):
-            for j in range(new_alpha.size()[1]):
-                new_alpha[i][j][max_idx[i][j]] = 1
+        new_alpha = max_idx
+        # new_alpha = torch.zeros_like(new_alpha)
+        # for i in range(new_alpha.size()[0]):
+        #     for j in range(new_alpha.size()[1]):
+        #         new_alpha[i][j][max_idx[i][j]] = 1
     model.module.set_alpha(new_alpha)
     model.module.train_alpha(False)
     model.train()

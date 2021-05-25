@@ -147,15 +147,20 @@ class Block(nn.Module):
     def forward(self, x, alpha=None):
         if self.use_adapter:
             if self.capacity:
-                assert int(alpha.size()[1]) == self.capacity; f"Incompatible alpha for limited capacity, expected {self.capacity} got {alpha.size()[1]}"
-                # TODO: add adapters first to save multiplications
-                # TODO: normalize alpha for fair comparison?
-                x = self.drop_path(self.attn(self.norm1(x)))
-                for i in range(self.capacity):
-                    x = x + (alpha[0][i]/self.capacity) * self.adapter1[i](x)
-                x = self.drop_path(self.mlp(self.norm2(x)))
-                for i in range(self.capacity):
-                    x = x + (alpha[1][i]/self.capacity) * self.adapter2[i](x)
+                x_ = self.drop_path(self.attn(self.norm1(x)))
+                if len(alpha.size()) == 1:
+                    x = x + self.adapter1[alpha[0]](x_)
+                    x_ = self.drop_path(self.mlp(self.norm2(x)))
+                    x = x + self.adapter2[alpha[1]](x_)
+                elif len(alpha.size()) == 1:
+                    assert int(alpha.size()[1]) == self.capacity;
+                    f"Incompatible alpha for limited capacity, expected {self.capacity} got {alpha.size()[1]}"
+                    # TODO: add adapters first to save multiplications
+                    for i in range(self.capacity):
+                        x = x + (alpha[0][i]/self.capacity) * self.adapter1[i](x_)
+                    x_ = self.drop_path(self.mlp(self.norm2(x)))
+                    for i in range(self.capacity):
+                        x = x + (alpha[1][i]/self.capacity) * self.adapter2[i](x_)
             else:
                 x = x + self.adapter1(self.drop_path(self.attn(self.norm1(x))))
                 x = x + self.adapter2(self.drop_path(self.mlp(self.norm2(x))))
