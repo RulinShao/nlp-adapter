@@ -205,9 +205,10 @@ def main():
             writer.add_scalar(
                 "cl/avg_acc", avg_acc / num_tasks_learned, num_tasks_learned
             )
-            writer.add_scalar(
-                "cl/avg_bwt", avg_bwt / (num_tasks_learned - 1), num_tasks_learned
-            )
+            if num_tasks_learned > 1:
+                writer.add_scalar(
+                    "cl/avg_bwt", avg_bwt / (num_tasks_learned - 1), num_tasks_learned
+                )
             torch.cuda.empty_cache()
 
     return adapt_acc1
