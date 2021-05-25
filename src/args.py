@@ -33,6 +33,9 @@ def parse_arguments():
         "--capacity", type=int, default=5, help="The maximum of the number of adapters can be added."
     )
     parser.add_argument(
+        "--soft_alpha", type=bool, default=False
+    )
+    parser.add_argument(
         "--train_layer", type=int, default=-1, help="Train the last n layers. 0 for the head layer only."
     )
     parser.add_argument(

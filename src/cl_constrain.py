@@ -88,7 +88,7 @@ def main():
         model, params = get_task_model(model, num_tasks_learned, idx)
 
         if args.train_adapter and args.capacity is not None:
-            infer(model, writer, criterion, data_loader.train_loader)
+            infer(model, writer, criterion, data_loader.train_loader, use_soft=args.soft_alpha)
 
         # get learning rate
         lr = (

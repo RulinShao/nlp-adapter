@@ -67,7 +67,7 @@ class MultiAdapter(nn.Module):
         self.num_adapters = num_adapters
         self.weight = [nn.Parameter() for _ in range(self.num_adapters)]
 
-    def forward(self, x, alpha):
+    def forward(self, x, alpha=None):
         assert len(alpha) == self.num_adapters
         new_weight = torch.sum(alpha[i] * self.adapter[i].weight for i in range(len(alpha)))
         return x
@@ -144,15 +144,16 @@ class Block(nn.Module):
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
-    def forward(self, x, alpha=None):
+    def forward(self, x, alpha=None, soft=False):
         if self.use_adapter:
             if self.capacity:
                 x_ = self.drop_path(self.attn(self.norm1(x)))
-                if len(alpha.size()) == 1:
+                if not soft:
+                    alpha = torch.argmax(alpha)
                     x = x + self.adapter1[alpha[0]](x_)
                     x_ = self.drop_path(self.mlp(self.norm2(x)))
                     x = x + self.adapter2[alpha[1]](x_)
-                elif len(alpha.size()) == 1:
+                else:
                     assert int(alpha.size()[1]) == self.capacity;
                     f"Incompatible alpha for limited capacity, expected {self.capacity} got {alpha.size()[1]}"
                     # TODO: add adapters first to save multiplications
@@ -202,28 +203,7 @@ class VisionTransformer(nn.Module):
     def __init__(self, img_size=224, patch_size=16, in_chans=3, num_classes=1000, embed_dim=768, depth=12,
                  num_heads=12, mlp_ratio=4., qkv_bias=True, qk_scale=None, representation_size=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0., embed_layer=PatchEmbed, norm_layer=None,
-                 act_layer=None, weight_init='', use_adapter=False, capacity=None):
-        """
-        Args:
-            img_size (int, tuple): input image size
-            patch_size (int, tuple): patch size
-            in_chans (int): number of input channels
-            num_classes (int): number of classes for classification head
-            embed_dim (int): embedding dimension
-            depth (int): depth of transformer
-            num_heads (int): number of attention heads
-            mlp_ratio (int): ratio of mlp hidden dim to embedding dim
-            qkv_bias (bool): enable bias for qkv if True
-            qk_scale (float): override default qk scale of head_dim ** -0.5 if set
-            representation_size (Optional[int]): enable and set representation layer (pre-logits) to this value if set
-            add_adapter (bool): add adapters to the model
-            drop_rate (float): dropout rate
-            attn_drop_rate (float): attention dropout rate
-            drop_path_rate (float): stochastic depth rate
-            embed_layer (nn.Module): patch embedding layer
-            norm_layer: (nn.Module): normalization layer
-            weight_init: (str): weight init scheme
-        """
+                 act_layer=None, weight_init='', use_adapter=False, capacity=None, soft_alpha=False):
         super().__init__()
         self.num_classes = num_classes
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
@@ -233,6 +213,7 @@ class VisionTransformer(nn.Module):
         if capacity is not None and capacity > 0:
             self.capacity = capacity
             self.alpha = nn.Parameter(torch.ones((self.depth, 2, self.capacity)))
+            self.soft_alpha = soft_alpha
         else:
             self.capacity = None
             self.alpha = None
@@ -310,23 +291,20 @@ class VisionTransformer(nn.Module):
             self.reset_classifier(new_head)
             self.head.requires_grad = True
 
-    def set_alpha(self, alpha):
+    def update_alpha(self, alpha=None, soft_alpha=False):
+        if alpha is None:
+            alpha = nn.Parameter(torch.ones((self.depth, 2, self.capacity)))
+            soft_alpha = True
         self.alpha.data.copy_(alpha)
+        self.soft_alpha = soft_alpha
 
     def train_alpha(self, train_alpha=True):
         if train_alpha:
-            # for p in self.parameters():
-            #     p.requires_grad_(False)
             self.alpha.requires_grad_(True)
         else:
-            # for p in self.parameters():
-            #     p.requires_grad_(True)
             self.alpha.requires_grad_(False)
 
     def set_layer(self, layer_num=0, new_head=None):
-        # Remove adapter layers.
-        # Set the head layer trainable
-        # Reset the head layer when dimension of new head is given
         self.remove_adapter()
 
         for name, param in self.named_parameters():
@@ -371,7 +349,7 @@ class VisionTransformer(nn.Module):
         for i in range(self.depth):
             if self.capacity:
                 assert int(self.alpha.size()[0]) == self.depth
-                x = self.blocks[i](x, self.alpha[i])
+                x = self.blocks[i](x, self.alpha[i], soft=self.soft_alpha)
             else:
                 x = self.blocks[i](x)
         x = self.norm(x)
@@ -458,7 +436,7 @@ def create_model(
 def vit_small_patch16_224_adapter(pretrained=False, **kwargs):
     if pretrained:
         kwargs.setdefault('qk_scale', 768 ** -0.5)
-    model = VisionTransformer(patch_size=16, embed_dim=768, depth=8, num_heads=8, mlp_ratio=3., use_adapter=args.train_adapter, capacity=args.capacity, **kwargs)
+    model = VisionTransformer(patch_size=16, embed_dim=768, depth=8, num_heads=8, mlp_ratio=3., use_adapter=args.train_adapter, capacity=args.capacity, soft_alpha=args.soft_alpha, **kwargs)
     model.default_cfg = default_cfgs['vit_small_patch16_224']
     if pretrained:
         load_pretrained(
@@ -470,7 +448,7 @@ def vit_small_patch16_224_adapter(pretrained=False, **kwargs):
 def vit_base_patch16_224_in21k_adapter(pretrained=False, **kwargs):
     if pretrained:
         kwargs.setdefault('qk_scale', 768 ** -0.5)
-    model = VisionTransformer(patch_size=16, embed_dim=768, depth=12, num_heads=12, representation_size=768, use_adapter=args.train_adapter, capacity=args.capacity,
+    model = VisionTransformer(patch_size=16, embed_dim=768, depth=12, num_heads=12, representation_size=768, use_adapter=args.train_adapter, capacity=args.capacity, soft_alpha=args.soft_alpha,
                               **kwargs)
     model.default_cfg = default_cfgs['vit_base_patch16_224_in21k']
     if pretrained:
