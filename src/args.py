@@ -30,7 +30,7 @@ def parse_arguments():
         "--train_adapter", type=bool, default=True, help="Train the adapter and norm layers only"
     )
     parser.add_argument(
-        "--capacity", type=int, default=3, help="The maximum of the number of adapters can be added."
+        "--capacity", type=int, default=5, help="The maximum of the number of adapters can be added."
     )
     parser.add_argument(
         "--train_layer", type=int, default=-1, help="Train the last n layers. 0 for the head layer only."
@@ -38,7 +38,7 @@ def parse_arguments():
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=126,
+        default=64,
         metavar="N",
         help="input batch size for training (default: 64)",
     )
@@ -48,12 +48,12 @@ def parse_arguments():
     parser.add_argument(
         "--train-weight-tasks",
         type=int,
-        default=100,
+        default=0,
         metavar="N",
         help="number of tasks to train the weights, e.g. 1 for batchensembles. -1 for all tasks",
     )
     parser.add_argument(
-        "--eval_interval", type=int, default=1,
+        "--eval_interval", type=int, default=1000,
         help="After every n tasks we perform evaluation on all tasks learned so far",
     )
     parser.add_argument(
