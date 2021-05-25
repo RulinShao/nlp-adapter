@@ -150,9 +150,9 @@ class Block(nn.Module):
                 x_ = self.drop_path(self.attn(self.norm1(x)))
                 if not soft:
                     alpha = torch.argmax(alpha)
-                    x = x + self.adapter1[alpha[0]](x_)
+                    x = x + self.adapter1[int(alpha[0])](x_)
                     x_ = self.drop_path(self.mlp(self.norm2(x)))
-                    x = x + self.adapter2[alpha[1]](x_)
+                    x = x + self.adapter2[int(alpha[1])](x_)
                 else:
                     assert int(alpha.size()[1]) == self.capacity;
                     f"Incompatible alpha for limited capacity, expected {self.capacity} got {alpha.size()[1]}"
