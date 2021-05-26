@@ -103,3 +103,49 @@ def infer(model, writer, criterion, train_loader, use_soft=False):
     model.module.update_alpha(new_alpha, soft_alpha=use_soft) # Fix the alpha and pass the soft_alpha
     model.module.train_alpha(False)
     model.train()
+
+
+def adapt_test(model, writer, criterion, test_loader, task_idx, alpha_list, use_soft=False):
+    if len(alpha_list) > 0:
+        infer(model, writer, criterion, test_loader, use_soft)
+
+    model.zero_grad()
+    model.eval()
+    test_loss = 0
+    correct = 0
+    logit_entropy = 0.0
+
+    with torch.no_grad():
+
+        for data, target in test_loader:
+            if type(data) == list:
+                data = data[0]
+            data, target = data.to(args.device), target.to(args.device)
+            output = model(data)
+            if len(output.shape) == 1:
+                output = output.unsqueeze(0)
+            logit_entropy += (
+                -(output.softmax(dim=1) * output.log_softmax(dim=1))
+                .sum(1)
+                .mean()
+                .item()
+            )
+            test_loss += criterion(output, target).item()
+
+            # get the index of the max log-probability
+            pred = output.argmax(dim=1, keepdim=True)
+
+            correct += pred.eq(target.view_as(pred)).sum().item()
+
+        if len(alpha_list) > 0:
+            alpha_diff = torch.sum(abs(alpha_list[task_idx] - model.module.alpha))
+
+    test_loss /= len(test_loader)
+    logit_entropy /= len(test_loader)
+    test_acc = float(correct) / len(test_loader.dataset)
+
+    print(f"\nTest set: Average loss: {test_loss:.4f}, Accuracy: ({test_acc:.4f})\n")
+    if len(alpha_list) > 0:
+        return test_acc, alpha_diff
+    else:
+        return test_acc, None

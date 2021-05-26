@@ -62,6 +62,7 @@ def main():
         best_acc1 = [0.0 for _ in range(args.num_tasks)]
         curr_acc1 = [0.0 for _ in range(args.num_tasks)]
         adapt_acc1 = [0.0 for _ in range(args.num_tasks)]
+        alpha_list = []
 
     criterion = nn.CrossEntropyLoss().to(args.device)
 
@@ -73,7 +74,7 @@ def main():
     trainer = getattr(trainers, args.trainer or "default")
     print(f"=> Using trainer {trainer}")
 
-    train, test, infer = trainer.train, trainer.test, trainer.infer
+    train, test, infer, adapt_test = trainer.train, trainer.test, trainer.infer, trainer.adapt_test
 
     # Iterate through all tasks.
     for idx in range(args.num_tasks or 0):
@@ -89,6 +90,7 @@ def main():
 
         if args.train_adapter and args.capacity is not None:
             infer(model, writer, criterion, data_loader.train_loader, use_soft=args.soft_alpha)
+            alpha_list.append(model.module.alpha)
 
         # get learning rate
         lr = (
@@ -192,8 +194,8 @@ def main():
 
                 torch.cuda.empty_cache()
 
-                adapt_acc = test(
-                    model, writer, criterion, data_loader.val_loader, None, i
+                adapt_acc, alpha_diff = adapt_test(
+                    model, writer, criterion, data_loader.val_loader, i, alpha_list, args.soft_alpha
                 )
 
                 adapt_acc1[i] = adapt_acc
@@ -201,6 +203,11 @@ def main():
                 avg_bwt += (adapt_acc1[i] - curr_acc1[i])
 
                 torch.cuda.empty_cache()
+
+                if alpha_diff is not None:
+                    writer.add_scalar(
+                        f"cl/alpha/{num_tasks_learned}-{i}", alpha_diff, i
+                    )
 
             writer.add_scalar(
                 "cl/avg_acc", avg_acc / num_tasks_learned, num_tasks_learned

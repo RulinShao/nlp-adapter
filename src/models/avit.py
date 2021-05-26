@@ -149,7 +149,7 @@ class Block(nn.Module):
             if self.capacity:
                 x_ = self.drop_path(self.attn(self.norm1(x)))
                 if not soft:
-                    alpha = torch.argmax(alpha)
+                    alpha = torch.argmax(alpha, dim=1)
                     x = x + self.adapter1[alpha[0]](x_)
                     x_ = self.drop_path(self.mlp(self.norm2(x)))
                     x = x + self.adapter2[alpha[1]](x_)

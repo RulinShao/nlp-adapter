@@ -13,7 +13,7 @@ def parse_arguments():
     parser.add_argument(
         "--config", type=str, default=None, help="Config file to use, YAML format"
     )
-    parser.add_argument("--name", type=str, default="in21k_100_5adapter_hard", help="Experiment id.")
+    parser.add_argument("--name", type=str, default="EVAL:5adapter_hard_in21k", help="Experiment id.")
     parser.add_argument(
         "--log-dir",
         type=str,
@@ -56,7 +56,7 @@ def parse_arguments():
         help="number of tasks to train the weights, e.g. 1 for batchensembles. -1 for all tasks",
     )
     parser.add_argument(
-        "--eval_interval", type=int, default=1000,
+        "--eval_interval", type=int, default=1,
         help="After every n tasks we perform evaluation on all tasks learned so far",
     )
     parser.add_argument(
