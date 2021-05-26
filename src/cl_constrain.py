@@ -90,7 +90,7 @@ def main():
 
         if args.train_adapter and args.capacity is not None:
             infer(model, writer, criterion, data_loader.train_loader, use_soft=args.soft_alpha)
-            alpha_list.append(model.module.alpha)
+            alpha_list.append(model.module.alpha.clone())
 
         # get learning rate
         lr = (
