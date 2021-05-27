@@ -106,8 +106,13 @@ def infer(model, writer, criterion, train_loader, use_soft=False):
 
 
 def adapt_test(model, writer, criterion, test_loader, task_idx, alpha_list, use_soft=False):
+
+    remeber_alpha = True
     if len(alpha_list) > 0:
-        infer(model, writer, criterion, test_loader, use_soft)
+        if remeber_alpha:
+            model.module.update_alpha(alpha_list[task_idx], use_soft)
+        else:
+            infer(model, writer, criterion, test_loader, use_soft)
 
     model.zero_grad()
     model.eval()
