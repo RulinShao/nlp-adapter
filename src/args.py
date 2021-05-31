@@ -13,7 +13,7 @@ def parse_arguments():
     parser.add_argument(
         "--config", type=str, default=None, help="Config file to use, YAML format"
     )
-    parser.add_argument("--name", type=str, default="EVAL:5adapter_hard_rem_in21k", help="Experiment id.")
+    parser.add_argument("--name", type=str, default="531:5adapter_hard_5fix", help="Experiment id.")
     parser.add_argument(
         "--log-dir",
         type=str,

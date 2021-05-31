@@ -80,29 +80,37 @@ def test(model, writer, criterion, test_loader, epoch, task_idx):
     return test_acc
 
 
-def infer(model, writer, criterion, train_loader, use_soft=False):
-    print(f"=> Initializing alpha to size of {(model.module.depth, 2, model.module.capacity)}..")
-    model.module.update_alpha() # Initialize the alpha to torch.ones. soft_alpha holds True
-    model.module.train_alpha(True) # Set the alpha trainable
-    model.eval()
-    grad = torch.zeros_like(model.module.alpha.data)
-    print(f"=> Infering alpha using whole training data..")
-    for batch_idx, (data, target) in enumerate(train_loader):
-        data, target = data.to(args.device), target.to(args.device)
-        loss_alpha = criterion(model(data), target)
-        grad += torch.autograd.grad(loss_alpha, model.module.alpha)[0].detach()
-    del loss_alpha
-    new_alpha = nn.functional.softmin(grad, dim=2)
-    if not use_soft:
-        max_idx = torch.argmax(new_alpha, dim=2)
-        # new_alpha = max_idx
-        new_alpha = torch.zeros_like(new_alpha)
-        for i in range(new_alpha.size()[0]):
-            for j in range(new_alpha.size()[1]):
-                new_alpha[i][j][max_idx[i][j]] = 1
-    model.module.update_alpha(new_alpha, soft_alpha=use_soft) # Fix the alpha and pass the soft_alpha
-    model.module.train_alpha(False)
-    model.train()
+def infer(model, task_id, writer, criterion, train_loader, use_soft=False):
+    if task_id < model.module.capacity:
+        print(f"=> Using the {task_id}-th adapters in all layers..")
+        alpha = torch.zeros_like(model.module.alpha)
+        for d in range(model.module.depth):
+            alpha[d][0][task_id] = 1
+            alpha[d][1][task_id] = 1
+        model.module.update_alpha(alpha, soft_alpha=use_soft)
+    else:
+        print(f"=> Initializing alpha to size of {(model.module.depth, 2, model.module.capacity)}..")
+        model.module.update_alpha() # Initialize the alpha to torch.ones. soft_alpha holds True
+        model.module.train_alpha(True) # Set the alpha trainable
+        model.eval()
+        grad = torch.zeros_like(model.module.alpha.data)
+        print(f"=> Infering alpha using whole training data..")
+        for batch_idx, (data, target) in enumerate(train_loader):
+            data, target = data.to(args.device), target.to(args.device)
+            loss_alpha = criterion(model(data), target)
+            grad += torch.autograd.grad(loss_alpha, model.module.alpha)[0].detach()
+        del loss_alpha
+        new_alpha = nn.functional.softmin(grad, dim=2)
+        if not use_soft:
+            max_idx = torch.argmax(new_alpha, dim=2)
+            # new_alpha = max_idx
+            new_alpha = torch.zeros_like(new_alpha)
+            for i in range(new_alpha.size()[0]):
+                for j in range(new_alpha.size()[1]):
+                    new_alpha[i][j][max_idx[i][j]] = 1
+        model.module.update_alpha(new_alpha, soft_alpha=use_soft) # Fix the alpha and pass the soft_alpha
+        model.module.train_alpha(False)
+        model.train()
 
 
 def adapt_test(model, writer, criterion, test_loader, task_idx, alpha_list, use_soft=False):

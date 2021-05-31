@@ -89,7 +89,7 @@ def main():
         model, params = get_task_model(model, num_tasks_learned, idx)
 
         if args.train_adapter and args.capacity is not None:
-            infer(model, writer, criterion, data_loader.train_loader, use_soft=args.soft_alpha)
+            infer(model, idx, writer, criterion, data_loader.train_loader, use_soft=args.soft_alpha)
             alpha_list.append(model.module.alpha.clone())
 
         # get learning rate
@@ -206,7 +206,7 @@ def main():
 
                 if alpha_diff is not None:
                     writer.add_scalar(
-                        f"cl/alpha/{num_tasks_learned}-{i}", alpha_diff, i
+                        f"alpha/{num_tasks_learned}", alpha_diff, i
                     )
 
             writer.add_scalar(
