@@ -52,14 +52,17 @@ def get_task_model(model, num_tasks_learned, idx):
             for d in range(model.module.depth):
                 for i in range(2):
                     for c in range(model.module.capacity):
-                        params_prefix = f"blocks.{d}.adapter{i}.{c}."
+                        params_prefix = f"blocks.{d}.adapter{i+1}.{c}."
                         params_list = []
                         for n, p in model.named_parameters():
                             if params_prefix in n:
                                 params_list.append(p)
                         assert len(params_list) > 0; "Error in getting adapter parameters"
                         adapter_params.update({params_prefix: params_list})
-
+            for n, p in model.named_parameters():
+                if not p.requires_grad or 'adapter' in n:
+                    continue
+                params.append(p)
             return model, params, adapter_params
         else:
             for n, p in model.named_parameters():

@@ -109,7 +109,7 @@ def main():
                 for d in range(model.module.depth):
                     for i in range(2):
                         for c in range(model.module.capacity):
-                            params_prefix = f"blocks.{d}.adapter{i}.{c}."
+                            params_prefix = f"blocks.{d}.adapter{i+1}.{c}."
                             num_adapter_learned = model.module.adapter_count[d][i][c]
                             if d + i + c == 0:
                                 optimizer = optim.Adam([
