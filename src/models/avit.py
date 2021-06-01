@@ -214,6 +214,7 @@ class VisionTransformer(nn.Module):
             self.capacity = capacity
             self.alpha = nn.Parameter(torch.ones((self.depth, 2, self.capacity)))
             self.soft_alpha = soft_alpha
+            self.adapter_count = torch.zeros_like(self.alpha)
         else:
             self.capacity = None
             self.alpha = None
@@ -297,6 +298,9 @@ class VisionTransformer(nn.Module):
             soft_alpha = True
         self.alpha.data.copy_(alpha)
         self.soft_alpha = soft_alpha
+
+    def count_alpha(self, new_alpha):
+        self.adapter_count = self.adapter_count + new_alpha
 
     def train_alpha(self, train_alpha=True):
         if train_alpha:

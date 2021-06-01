@@ -109,6 +109,7 @@ def infer(model, task_id, writer, criterion, train_loader, use_soft=False):
                 for j in range(new_alpha.size()[1]):
                     new_alpha[i][j][max_idx[i][j]] = 1
         model.module.update_alpha(new_alpha, soft_alpha=use_soft) # Fix the alpha and pass the soft_alpha
+        model.module.count_alpha(new_alpha)
         model.module.train_alpha(False)
         model.train()
 

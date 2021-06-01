@@ -13,7 +13,7 @@ def parse_arguments():
     parser.add_argument(
         "--config", type=str, default=None, help="Config file to use, YAML format"
     )
-    parser.add_argument("--name", type=str, default="531:100full", help="Experiment id.")
+    parser.add_argument("--name", type=str, default="601:5adapter_hard", help="Experiment id.")
     parser.add_argument(
         "--log-dir",
         type=str,
@@ -27,10 +27,10 @@ def parse_arguments():
         "--pretrained", type=bool, default=True, help="whether use a pretrained model as the backbone"
     )
     parser.add_argument(
-        "--train_adapter", type=bool, default=False, help="Train the adapter and norm layers only"
+        "--train_adapter", type=bool, default=True, help="Train the adapter and norm layers only"
     )
     parser.add_argument(
-        "--capacity", type=int, default=None, help="The maximum of the number of adapters can be added."
+        "--capacity", type=int, default=5, help="The maximum of the number of adapters can be added."
     )
     parser.add_argument(
         "--soft_alpha", type=bool, default=False
@@ -51,7 +51,7 @@ def parse_arguments():
     parser.add_argument(
         "--train-weight-tasks",
         type=int,
-        default=100,
+        default=0,
         metavar="N",
         help="number of tasks to train the weights, e.g. 1 for batchensembles. -1 for all tasks",
     )
