@@ -3,7 +3,6 @@ import torch
 from args import args
 
 from timm.models import load_checkpoint, create_model
-import models.vit
 
 
 def get_backbone():
@@ -183,6 +182,7 @@ def count_trainable_parameters(model):
 
 
 if __name__ == "__main__":
+    import models.avit
     model = get_backbone()
     model = modify_model(model, 1000//args.num_tasks)
     count  = count_trainable_parameters(model)
