@@ -161,6 +161,9 @@ def main():
             ):
                 break
 
+        if args.train_adapter and args.capacity is not None:
+            model.module.count_alpha()
+
         utils.write_result_to_csv(
             name=f"{args.name}~set={args.set}~task={idx}",
             curr_acc1=curr_acc1[idx],

@@ -299,7 +299,9 @@ class VisionTransformer(nn.Module):
         self.alpha.data.copy_(alpha)
         self.soft_alpha = soft_alpha
 
-    def count_alpha(self, new_alpha):
+    def count_alpha(self, new_alpha=None):
+        if new_alpha is None:
+            new_alpha = self.alpha.data
         self.adapter_count = self.adapter_count + new_alpha
 
     def train_alpha(self, train_alpha=True):
