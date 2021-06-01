@@ -45,13 +45,28 @@ def get_task_model(model, num_tasks_learned, idx):
             # train all weights if train_weight_tasks is -1, or num_tasks_learned < train_weight_tasks
                 p.requires_grad = True
                 params.append(p)
+        return model, params
     else:
-        for n, p in model.named_parameters():
-            if not p.requires_grad:
-                continue
-            params.append(p)
+        if args.train_adapter and args.capacity is not None:
+            adapter_params = {}
+            for d in range(model.module.depth):
+                for i in range(2):
+                    for c in range(model.module.capacity):
+                        params_prefix = f"blocks.{d}.adapter{i}.{c}."
+                        params_list = []
+                        for n, p in model.named_parameters():
+                            if params_prefix in n:
+                                params_list.append(p)
+                        assert len(params_list) > 0; "Error in getting adapter parameters"
+                        adapter_params.update({params_prefix: params_list})
 
-    return model, params
+            return model, params, adapter_params
+        else:
+            for n, p in model.named_parameters():
+                if not p.requires_grad:
+                    continue
+                params.append(p)
+            return model, params
 
 
 def _resume_from_ckpt(model):

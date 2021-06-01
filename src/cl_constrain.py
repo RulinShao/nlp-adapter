@@ -86,7 +86,10 @@ def main():
         ), "[ERROR] Need to implement update task method for use with multitask experiments"
 
         data_loader.update_task(idx)
-        model, params = get_task_model(model, num_tasks_learned, idx)
+        if args.train_adapter and args.capacity is not None:
+            model, params, adapter_params = get_task_model(model, num_tasks_learned, idx)
+        else:
+            model, params = get_task_model(model, num_tasks_learned, idx)
 
         if args.train_adapter and args.capacity is not None:
             infer(model, idx, writer, criterion, data_loader.train_loader, use_soft=args.soft_alpha)
@@ -102,6 +105,20 @@ def main():
 
         # get optimizer, scheduler
         if args.optimizer == "adam":
+            if args.train_adapter and args.capacity is not None:
+                for d in range(model.module.depth):
+                    for i in range(2):
+                        for c in range(model.module.capacity):
+                            params_prefix = f"blocks.{d}.adapter{i}.{c}."
+                            num_adapter_learned = model.module.adapter_count[d][i][c]
+                            if d + i + c == 0:
+                                optimizer = optim.Adam([
+                                    {'params': adapter_params[params_prefix], 'lr': lr / 2**num_adapter_learned}
+                                ])
+                            else:
+                                optimizer.param_groups.append({'params': adapter_params[params_prefix], 'lr': lr / 2**num_adapter_learned})
+                optimizer.param_groups.append({'params': params, 'lr': lr})
+
             optimizer = optim.Adam(params, lr=lr, weight_decay=args.wd)
         elif args.optimizer == "rmsprop":
             optimizer = optim.RMSprop(params, lr=lr)
