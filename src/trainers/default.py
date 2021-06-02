@@ -99,7 +99,6 @@ def infer(model, task_id, writer, criterion, train_loader, use_soft=False):
             data, target = data.to(args.device), target.to(args.device)
             loss_alpha = criterion(model(data), target)
             grad += torch.autograd.grad(loss_alpha, model.module.alpha)[0].detach()
-            break
         del loss_alpha
         new_alpha = nn.functional.softmin(grad, dim=2)
         if not use_soft:
