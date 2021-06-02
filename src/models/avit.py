@@ -302,6 +302,8 @@ class VisionTransformer(nn.Module):
     def count_alpha(self, new_alpha=None):
         if new_alpha is None:
             new_alpha = self.alpha.data
+        print(f"new_alpha: {new_alpha.device}")
+        print(f"adapter_count: {self.adapter_count.device}")
         self.adapter_count = self.adapter_count + new_alpha
 
     def train_alpha(self, train_alpha=True):

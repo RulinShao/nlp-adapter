@@ -95,6 +95,8 @@ def main():
             infer(model, idx, writer, criterion, data_loader.train_loader, use_soft=args.soft_alpha)
             alpha_list.append(model.module.alpha.clone())
 
+            model.module.count_alpha()
+
         # get learning rate
         lr = (
             args.train_weight_lr
