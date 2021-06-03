@@ -13,7 +13,7 @@ def parse_arguments():
     parser.add_argument(
         "--config", type=str, default=None, help="Config file to use, YAML format"
     )
-    parser.add_argument("--name", type=str, default="602:adapter-hard-lr", help="Experiment id.")
+    parser.add_argument("--name", type=str, default="602:5adapter-hard-lr", help="Experiment id.")
     parser.add_argument(
         "--log-dir",
         type=str,
@@ -30,7 +30,7 @@ def parse_arguments():
         "--train_adapter", type=bool, default=True, help="Train the adapter and norm layers only"
     )
     parser.add_argument(
-        "--capacity", type=int, default=2, help="The maximum of the number of adapters can be added."
+        "--capacity", type=int, default=5, help="The maximum of the number of adapters can be added."
     )
     parser.add_argument(
         "--soft_alpha", type=bool, default=False
@@ -46,7 +46,7 @@ def parse_arguments():
         help="input batch size for training (default: 64)",
     )
     parser.add_argument(
-        "--save", type=str, default="full", choices=["full", "adapter", "head", "layer"], help="save full checkpoints if full, save only tranable parameter is partial"
+        "--save", type=str, default="adapter", choices=["full", "adapter", "head", "layer"], help="save full checkpoints if full, save only tranable parameter is partial"
     )
     parser.add_argument(
         "--train-weight-tasks",
