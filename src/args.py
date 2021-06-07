@@ -13,7 +13,7 @@ def parse_arguments():
     parser.add_argument(
         "--config", type=str, default=None, help="Config file to use, YAML format"
     )
-    parser.add_argument("--name", type=str, default="607DEBUG:5adapter-heads-hard-lr", help="Experiment id.")
+    parser.add_argument("--name", type=str, default="607:5adapter-heads-hard-lr", help="Experiment id.")
     parser.add_argument(
         "--log-dir",
         type=str,
@@ -41,7 +41,7 @@ def parse_arguments():
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=16,
+        default=128,
         metavar="N",
         help="input batch size for training (default: 64)",
     )
@@ -78,7 +78,7 @@ def parse_arguments():
     parser.add_argument(
         "--epochs",
         type=int,
-        default=10,
+        default=100,
         metavar="N",
         help="number of epochs to train (default: 100)",
     )
@@ -134,7 +134,7 @@ def parse_arguments():
     parser.add_argument("--set", type=str, default='SplitImageNet', help="Which dataset to use")
     parser.add_argument("--no-scheduler", action="store_true", help="constant LR")
     parser.add_argument(
-        "--iter-lim", default=10, type=int, help="iteration limitation"
+        "--iter-lim", default=-1, type=int, help="iteration limitation"
     )
     parser.add_argument(
         "--train-weight-lr",
