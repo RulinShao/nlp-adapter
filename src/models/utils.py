@@ -59,6 +59,9 @@ def get_task_model(model, num_tasks_learned, idx):
                                 params_list.append(p)
                         assert len(params_list) > 0; "Error in getting adapter parameters"
                         adapter_params.update({params_prefix: params_list})
+
+            # model.module.choose_head_from_list(idx)
+            # model.module.head.requires_grad_(True)
             for n, p in model.named_parameters():
                 if not p.requires_grad or 'adapter' in n:
                     continue

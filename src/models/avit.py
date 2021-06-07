@@ -231,6 +231,7 @@ class VisionTransformer(nn.Module):
         self.pos_drop = nn.Dropout(p=drop_rate)
 
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
+        # TODO: set only the adapter related to task trainable
         self.blocks = nn.ModuleList([
             Block(
                 dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
@@ -251,6 +252,7 @@ class VisionTransformer(nn.Module):
 
         # Classifier head(s)
         self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
+        self.head_list = None
 
         # Weight init
         assert weight_init in ('jax', 'jax_nlhb', 'nlhb', '')
@@ -275,9 +277,23 @@ class VisionTransformer(nn.Module):
     def get_classifier(self):
         return self.head
 
+    def choose_head_from_list(self, task_id):
+        if task_id >= 0:
+            self.head = self.head_list[task_id]
+        else:
+            self.head = None
+        return self.head
+
     def reset_classifier(self, num_classes):
         self.num_classes = num_classes
         self.head = nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
+
+    def reset_classifier_list(self, num_classes):
+        self.num_classes = num_classes
+        self.head = None
+        self.head_list = nn.ModuleList(
+            [nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity() for _ in range(args.num_tasks)]
+        )
 
     def set_adapter(self, new_head=None):
         # Set adapter and norm layers trainable.
@@ -289,8 +305,8 @@ class VisionTransformer(nn.Module):
             else:
                 param.requires_grad = False
         if new_head:
-            self.reset_classifier(new_head)
-            self.head.requires_grad = True
+            self.reset_classifier_list(new_head)
+            self.head_list.requires_grad = True
 
     def update_alpha(self, alpha=None, soft_alpha=False):
         if alpha is None:
@@ -363,6 +379,10 @@ class VisionTransformer(nn.Module):
 
     def forward(self, x):
         x = self.forward_features(x)
+        # assert self.head is not None
+        if self.use_adapter and self.capacity is not None and self.task >= 0:
+            x = self.head_list[self.task](x)
+            return x
         x = self.head(x)
         return x
 
