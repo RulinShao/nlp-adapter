@@ -100,7 +100,7 @@ def main(args):
                 correct_samples += (predicted == y).sum()
 
                 indiv_loss = F.cross_entropy(predictions, Variable(y))
-                total_loss += indiv_loss.data[0]
+                total_loss += indiv_loss.data
 
                 optimizer.zero_grad()
                 indiv_loss.backward()
