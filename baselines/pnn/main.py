@@ -34,7 +34,7 @@ def get_args():
     parser = argparse.ArgumentParser(description='Progressive Neural Networks for SplitImageNet')
     parser.add_argument('-path', default='/home/ec2-user/dataset/ilsvrc2012/', type=str, help='path to the data')
     parser.add_argument('-cuda', default=0, type=int, help='Cuda device to use (-1 for none)')
-    parser.add_argument('run_base_dir', default='outputs', type=str, help='dir to save outputs')
+    parser.add_argument('-run_base_dir', default='outputs', type=str, help='dir to save outputs')
 
     parser.add_argument('--layers', metavar='L', type=int, default=3, help='Number of layers per task')
     parser.add_argument('--sizes', dest='sizes', default=[784, 1024, 512, 10], nargs='+',

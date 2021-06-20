@@ -76,7 +76,7 @@ class SplitImageNet:
                 )
             )
 
-    def _construct_dataset_splits(self, train_dataset, val_dataset):
+    def _construct_dataset_splits(self, train_dataset, val_dataset, num_tasks):
         print(f"==> Using seed {1} for ImageNet split")
         np.random.seed(1)
 
@@ -84,10 +84,10 @@ class SplitImageNet:
         class_split_order = np.random.permutation(1000)
 
         print("=> Splitting train dataset")
-        train_datasets = self._split_dataset(train_dataset, class_split_order)
+        train_datasets = self._split_dataset(train_dataset, class_split_order, num_tasks)
 
         print("=> Splitting val dataset")
-        val_datasets = self._split_dataset(val_dataset, class_split_order)
+        val_datasets = self._split_dataset(val_dataset, class_split_order, num_tasks)
 
         return train_datasets, val_datasets
 
