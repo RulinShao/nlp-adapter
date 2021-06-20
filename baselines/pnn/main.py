@@ -17,7 +17,6 @@ import logging
 from torch.utils.tensorboard import SummaryWriter
 
 from torch.autograd import Variable
-from tqdm import tqdm
 
 # from src.data.PermutedMNIST import get_permuted_MNIST
 from src.data.splitimagenet import get_SplitImageNet
@@ -36,10 +35,10 @@ def get_args():
     parser.add_argument('-cuda', default=0, type=int, help='Cuda device to use (-1 for none)')
     parser.add_argument('-run_base_dir', default='outputs', type=str, help='dir to save outputs')
 
-    parser.add_argument('--layers', metavar='L', type=int, default=3, help='Number of layers per task')
+    parser.add_argument('--layers', metavar='L', type=int, default=12, help='Number of layers per task')
     # parser.add_argument('--sizes', dest='sizes', default=[784, 1024, 512, 10], nargs='+',
     #                     action=LengthCheckAction)
-    parser.add_argument('--sizes', dest='sizes', default=[3*784, 1024, 512, 10], nargs='+',
+    parser.add_argument('--sizes', dest='sizes', default=[3*784]+[784 for _ in range(11)]+[10], nargs='+',
                         action=LengthCheckAction)
 
     parser.add_argument('--n_tasks', dest='n_tasks', type=int, default=100)
@@ -88,7 +87,7 @@ def main(args):
             total_samples = 0
             total_loss = 0
             correct_samples = 0
-            for inputs, labels in tqdm(train_set):
+            for idx, (inputs, labels) in enumerate(train_set):
                 x.resize_(inputs.size()).copy_(inputs)
                 y.resize_(labels.size()).copy_(labels)
 
