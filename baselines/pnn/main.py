@@ -37,7 +37,9 @@ def get_args():
     parser.add_argument('-run_base_dir', default='outputs', type=str, help='dir to save outputs')
 
     parser.add_argument('--layers', metavar='L', type=int, default=3, help='Number of layers per task')
-    parser.add_argument('--sizes', dest='sizes', default=[784, 1024, 512, 10], nargs='+',
+    # parser.add_argument('--sizes', dest='sizes', default=[784, 1024, 512, 10], nargs='+',
+    #                     action=LengthCheckAction)
+    parser.add_argument('--sizes', dest='sizes', default=[3*784, 1024, 512, 10], nargs='+',
                         action=LengthCheckAction)
 
     parser.add_argument('--n_tasks', dest='n_tasks', type=int, default=100)

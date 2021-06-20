@@ -36,7 +36,7 @@ class SplitImageNet:
             traindir,
             transforms.Compose(
                 [
-                    transforms.RandomResizedCrop(224),
+                    transforms.RandomResizedCrop(28),
                     transforms.RandomHorizontalFlip(),
                     transforms.ToTensor(),
                     normalize,
@@ -48,8 +48,8 @@ class SplitImageNet:
             valdir,
             transforms.Compose(
                 [
-                    transforms.Resize(256),
-                    transforms.CenterCrop(224),
+                    transforms.Resize(30),
+                    transforms.CenterCrop(28),
                     transforms.ToTensor(),
                     normalize,
                 ]
