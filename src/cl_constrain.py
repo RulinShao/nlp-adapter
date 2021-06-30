@@ -1,4 +1,5 @@
 """
+Adapters for continual learning.
 This script is adapted from https://github.com/RAIVNLab/supsup.
 """
 import os
