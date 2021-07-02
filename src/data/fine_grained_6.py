@@ -7,9 +7,9 @@ import torchvision.transforms as transforms
 # from args import args
 
 
-DATASETS=('imagenet', 'cubs_cropped', 'stanford_cars_cropped', 'flowers', 'wikiart', 'sketches')
-NUM_CLASSES=(1000, 200, 196, 102, 195, 250)
-INIT_LR=(1e-3, 1e-3, 1e-2, 1e-3, 1e-3, 1e-3)
+DATASETS=('cubs_cropped', 'stanford_cars_cropped', 'flowers', 'wikiart', 'sketches')
+NUM_CLASSES=(200, 196, 102, 195, 250)
+INIT_LR=(1e-3, 1e-2, 1e-3, 1e-3, 1e-3)
 
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
@@ -44,8 +44,8 @@ def train_loader(path, train_batch_size, num_workers=24, pin_memory=False, norma
             mean=IMAGENET_MEAN, std=IMAGENET_STD)
 
     train_transform = transforms.Compose([
-        transforms.Scale(256),
-        transforms.RandomSizedCrop(224),
+        transforms.Resize(256),
+        transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         normalize,
@@ -68,7 +68,7 @@ def val_loader(path, val_batch_size, num_workers=24, pin_memory=False, normalize
     val_dataset = \
         datasets.ImageFolder(path,
                              transforms.Compose([
-                                 transforms.Scale(256),
+                                 transforms.Resize(256),
                                  transforms.CenterCrop(224),
                                  transforms.ToTensor(),
                                  normalize,
@@ -84,8 +84,7 @@ def train_loader_cropped(path, train_batch_size, num_workers=24, pin_memory=Fals
         mean=IMAGENET_MEAN, std=IMAGENET_STD)
 
     train_transform = transforms.Compose([
-        # transforms.Scale(224),
-        Scale((224, 224)),
+        transforms.Resize(224),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         normalize,
@@ -107,8 +106,7 @@ def val_loader_cropped(path, val_batch_size, num_workers=24, pin_memory=False):
     val_dataset = \
         datasets.ImageFolder(path,
                              transforms.Compose([
-                                 # transforms.Scale(224),
-                                 Scale((224, 224)),
+                                 transforms.Resize(224),
                                  transforms.ToTensor(),
                                  normalize,
                              ]))
@@ -118,61 +116,16 @@ def val_loader_cropped(path, val_batch_size, num_workers=24, pin_memory=False):
         num_workers=num_workers, pin_memory=pin_memory)
 
 
-# Note: This might not be needed anymore given that this functionality exists in
-# the newer PyTorch versions.
-class Scale(object):
-    """Rescale the input PIL.Image to the given size.
-    Args:
-        size (sequence or int): Desired output size. If size is a sequence like
-            (w, h), output size will be matched to this. If size is an int,
-            smaller edge of the image will be matched to this number.
-            i.e, if height > width, then image will be rescaled to
-            (size * height / width, size)
-        interpolation (int, optional): Desired interpolation. Default is
-            ``PIL.Image.BILINEAR``
-    """
-
-    def __init__(self, size, interpolation=Image.BILINEAR):
-        assert isinstance(size, int) or (isinstance(
-            size, collections.Iterable) and len(size) == 2)
-        self.size = size
-        self.interpolation = interpolation
-
-    def __call__(self, img):
-        """
-        Args:
-            img (PIL.Image): Image to be scaled.
-        Returns:
-            PIL.Image: Rescaled image.
-        """
-        if isinstance(self.size, int):
-            w, h = img.size
-            if (w <= h and w == self.size) or (h <= w and h == self.size):
-                return img
-            if w < h:
-                ow = self.size
-                oh = int(self.size * h / w)
-                return img.resize((ow, oh), self.interpolation)
-            else:
-                oh = self.size
-                ow = int(self.size * w / h)
-                return img.resize((ow, oh), self.interpolation)
-        else:
-            return img.resize(self.size, self.interpolation)
-
-
 def set_dataset_paths(args):
     """Set default train and test path if not provided as input."""
 
-    if not args.train_path:
-        args.train_path = 'data/%s/train' % (args.dataset)
+    args.train_path = '~/dataset/fine_grained/%s/train' % (args.dataset)
 
-    if not args.val_path:
-        if (args.dataset in ['imagenet', 'face_verification', 'emotion', 'gender'] or
-            args.dataset[:3] == 'age'):
-            args.val_path = 'data/%s/val' % (args.dataset)
-        else:
-            args.val_path = 'data/%s/test' % (args.dataset)
+    if (args.dataset in ['imagenet', 'face_verification', 'emotion', 'gender'] or
+        args.dataset[:3] == 'age'):
+        args.val_path = '~/dataset/fine_grained/%s/val' % (args.dataset)
+    else:
+        args.val_path = '~/dataset/fine_grained/%s/test' % (args.dataset)
 
 
 def get_loaders(args):
@@ -187,6 +140,15 @@ def get_loaders(args):
 
 
 if __name__ == '__main__':
-    from ..args import args
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Data Loader")
+    parser.add_argument("--dataset", default=None)
+    parser.add_argument("--batch_size", default=32)
+    parser.add_argument("--val_batch_size", default=32)
+    args = parser.parse_args()
+
     for dataset_name in DATASETS:
+        args.dataset = dataset_name
         t_loader, v_loader = get_loaders(args)
+        print(f"{args.dataset}: {len(t_loader)}, {len(v_loader)}")
