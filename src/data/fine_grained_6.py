@@ -187,6 +187,6 @@ def get_loaders(args):
 
 
 if __name__ == '__main__':
-    
+    from ..args import args
     for dataset_name in DATASETS:
         t_loader, v_loader = get_loaders(args)
