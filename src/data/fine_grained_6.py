@@ -4,7 +4,7 @@ from PIL import Image
 import torch
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
-from args import args
+# from args import args
 
 
 DATASETS=('imagenet', 'cubs_cropped', 'stanford_cars_cropped', 'flowers', 'wikiart', 'sketches')
