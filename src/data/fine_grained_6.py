@@ -4,6 +4,12 @@ from PIL import Image
 import torch
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
+from args import args
+
+
+DATASETS=('imagenet', 'cubs_cropped', 'stanford_cars_cropped', 'flowers', 'wikiart', 'sketches')
+NUM_CLASSES=(1000, 200, 196, 102, 195, 250)
+INIT_LR=(1e-3, 1e-3, 1e-2, 1e-3, 1e-3, 1e-3)
 
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
@@ -153,3 +159,34 @@ class Scale(object):
                 return img.resize((ow, oh), self.interpolation)
         else:
             return img.resize(self.size, self.interpolation)
+
+
+def set_dataset_paths(args):
+    """Set default train and test path if not provided as input."""
+
+    if not args.train_path:
+        args.train_path = 'data/%s/train' % (args.dataset)
+
+    if not args.val_path:
+        if (args.dataset in ['imagenet', 'face_verification', 'emotion', 'gender'] or
+            args.dataset[:3] == 'age'):
+            args.val_path = 'data/%s/val' % (args.dataset)
+        else:
+            args.val_path = 'data/%s/test' % (args.dataset)
+
+
+def get_loaders(args):
+    set_dataset_paths(args)
+    if 'cropped' in args.dataset:
+        t_loader = train_loader_cropped(args.train_path, args.batch_size)
+        v_loader = val_loader_cropped(args.val_path, args.val_batch_size)
+    else:
+        t_loader = train_loader(args.train_path, args.batch_size)
+        v_loader = val_loader(args.val_path, args.val_batch_size)
+    return t_loader, v_loader
+
+
+if __name__ == '__main__':
+    
+    for dataset_name in DATASETS:
+        t_loader, v_loader = get_loaders(args)
