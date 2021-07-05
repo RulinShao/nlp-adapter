@@ -85,8 +85,8 @@ def train_loader(path, train_batch_size, num_workers=24, pin_memory=False, norma
             mean=IMAGENET_MEAN, std=IMAGENET_STD)
 
     train_transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.RandomResizedCrop(224),
+        transforms.Resize((256, 256)),
+        transforms.RandomResizedCrop((224, 224)),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         normalize,
@@ -109,7 +109,7 @@ def val_loader(path, val_batch_size, num_workers=24, pin_memory=False, normalize
     val_dataset = \
         datasets.ImageFolder(path,
                              transforms.Compose([
-                                 transforms.Resize(256),
+                                 transforms.Resize((256, 256)),
                                  transforms.CenterCrop(224),
                                  transforms.ToTensor(),
                                  normalize,
@@ -125,7 +125,7 @@ def train_loader_cropped(path, train_batch_size, num_workers=24, pin_memory=Fals
         mean=IMAGENET_MEAN, std=IMAGENET_STD)
 
     train_transform = transforms.Compose([
-        transforms.Resize(224),
+        transforms.Resize((224, 224)),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         normalize,
@@ -147,7 +147,7 @@ def val_loader_cropped(path, val_batch_size, num_workers=24, pin_memory=False):
     val_dataset = \
         datasets.ImageFolder(path,
                              transforms.Compose([
-                                 transforms.Resize(224),
+                                 transforms.Resize((224, 224)),
                                  transforms.ToTensor(),
                                  normalize,
                              ]))
