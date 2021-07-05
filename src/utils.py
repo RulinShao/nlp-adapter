@@ -10,21 +10,22 @@ import torch.backends.cudnn as cudnn
 from args import args
 
 
-def set_gpu(model):
+def set_gpu(model=None):
     if args.multigpu is None:
         args.device = torch.device("cpu")
+        return model
     else:
         # DataParallel will divide and allocate batch_size to all available GPUs
         print(f"=> Parallelizing on {args.multigpu} gpus")
         torch.cuda.set_device(args.multigpu[0])
         args.gpu = args.multigpu[0]
-        model = torch.nn.DataParallel(model, device_ids=args.multigpu).cuda(
-            args.multigpu[0]
-        )
         args.device = torch.cuda.current_device()
         cudnn.benchmark = True
-
-    return model
+        if model is not None:
+            model = torch.nn.DataParallel(model, device_ids=args.multigpu).cuda(
+                args.multigpu[0]
+            )  
+            return model
 
 
 def write_result_to_csv(**kwargs):

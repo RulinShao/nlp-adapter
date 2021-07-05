@@ -55,8 +55,6 @@ def main():
         adapt_acc1 = [0.0 for _ in range(args.num_tasks)]
         alpha_list = []
 
-    criterion = nn.CrossEntropyLoss().to(args.device)
-
     writer = SummaryWriter(log_dir=run_base_dir)
 
     # Track the number of tasks learned.
@@ -81,6 +79,8 @@ def main():
         task_length = data_loader.num_classes
         task_name = data_loader.dataset_name
         model = modify_model(model, task_length)
+        model = utils.set_gpu(model)
+        criterion = nn.CrossEntropyLoss().to(args.device)
 
         if args.train_adapter and args.capacity is not None:
             model, params, adapter_params = get_task_model(model, num_tasks_learned, idx)
