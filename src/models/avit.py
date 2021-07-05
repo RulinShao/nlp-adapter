@@ -45,6 +45,16 @@ default_cfgs = {
     'vit_base_patch16_224_in21k': _cfg(
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_base_patch16_224_in21k-e5005f0a.pth',
         num_classes=21843, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+    # deit models (FB weights)
+    'deit_tiny_patch16_224': _cfg(
+        url='https://dl.fbaipublicfiles.com/deit/deit_tiny_patch16_224-a1311bcf.pth',
+        mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD),
+    'deit_small_patch16_224': _cfg(
+        url='https://dl.fbaipublicfiles.com/deit/deit_small_patch16_224-cd65a155.pth',
+        mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD),
+    'deit_base_patch16_224': _cfg(
+        url='https://dl.fbaipublicfiles.com/deit/deit_base_patch16_224-b5f2ef4d.pth',
+        mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD),
 }
 
 
@@ -480,6 +490,26 @@ def vit_base_patch16_224_in21k_adapter(pretrained=False, **kwargs):
     model = VisionTransformer(patch_size=16, embed_dim=768, depth=12, num_heads=12, representation_size=768, use_adapter=args.train_adapter, capacity=args.capacity, soft_alpha=args.soft_alpha,
                               **kwargs)
     model.default_cfg = default_cfgs['vit_base_patch16_224_in21k']
+    if pretrained:
+        load_pretrained(
+            model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 3), filter_fn=_conv_filter,
+            strict=False)
+    return model
+
+
+@register_model
+def deit_tiny_patch16_224_adapter(pretrained=False, **kwargs):
+    """ DeiT-tiny model @ 224x224 from paper (https://arxiv.org/abs/2012.12877).
+    ImageNet-1k weights from https://github.com/facebookresearch/deit.
+    """
+    # model_kwargs = dict(patch_size=16, embed_dim=192, depth=12, num_heads=3, **kwargs)
+    # model = _create_vision_transformer('deit_tiny_patch16_224', pretrained=pretrained, **model_kwargs)
+    
+    if pretrained:
+        kwargs.setdefault('qk_scale', 768 ** -0.5)
+    model = VisionTransformer(patch_size=16, embed_dim=192, depth=12, num_heads=3, use_adapter=args.train_adapter, capacity=args.capacity, soft_alpha=args.soft_alpha,
+                              **kwargs)
+    model.default_cfg = default_cfgs['deit_tiny_patch16_224']
     if pretrained:
         load_pretrained(
             model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 3), filter_fn=_conv_filter,
