@@ -6,6 +6,21 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 # from args import args
 
+import os
+
+import torch
+from torchvision import datasets, transforms
+from args import args
+
+import torch.multiprocessing
+
+import numpy as np
+
+from copy import copy, deepcopy
+from itertools import chain
+
+torch.multiprocessing.set_sharing_strategy("file_system")
+
 
 DATASETS=('cubs_cropped', 'stanford_cars_cropped', 'flowers', 'wikiart', 'sketches')
 NUM_CLASSES=(200, 196, 102, 195, 250)
@@ -15,6 +30,26 @@ INIT_LR=(1e-3, 1e-2, 1e-3, 1e-3, 1e-3)
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
+
+class FineGrained:
+    def __init__(self):
+        super(FineGrained, self).__init__()
+
+        data_root = os.path.join('~/dataset/fine_grained/', '')
+
+        use_cuda = torch.cuda.is_available()
+
+        kwargs = {"num_workers": args.workers, "pin_memory": True} if use_cuda else {}
+
+        self.train_loaders = []
+        self.val_loaders = []
+
+        for dataset_name in DATASETS:
+            traindir, valdir = set_dataset_paths(dataset_name)
+            train_loader, val_loader = get_loaders(dataset_name, traindir, valdir, args)
+            self.train_loaders.append(train_loader)
+            self.val_loaders.append(val_loader)
+        
 
 class Cutout(object):
     def __init__(self, length):
@@ -116,26 +151,28 @@ def val_loader_cropped(path, val_batch_size, num_workers=24, pin_memory=False):
         num_workers=num_workers, pin_memory=pin_memory)
 
 
-def set_dataset_paths(args):
+def set_dataset_paths(dataset):
     """Set default train and test path if not provided as input."""
 
-    args.train_path = '~/dataset/fine_grained/%s/train' % (args.dataset)
+    train_path = '~/dataset/fine_grained/%s/train' % (dataset)
 
-    if (args.dataset in ['imagenet', 'face_verification', 'emotion', 'gender'] or
-        args.dataset[:3] == 'age'):
-        args.val_path = '~/dataset/fine_grained/%s/val' % (args.dataset)
+    if (dataset in ['imagenet', 'face_verification', 'emotion', 'gender'] or
+        dataset[:3] == 'age'):
+        val_path = '~/dataset/fine_grained/%s/val' % (dataset)
     else:
-        args.val_path = '~/dataset/fine_grained/%s/test' % (args.dataset)
+        val_path = '~/dataset/fine_grained/%s/test' % (dataset)
+    
+    return train_path, val_path
 
 
-def get_loaders(args):
-    set_dataset_paths(args)
-    if 'cropped' in args.dataset:
-        t_loader = train_loader_cropped(args.train_path, args.batch_size)
-        v_loader = val_loader_cropped(args.val_path, args.val_batch_size)
+def get_loaders(dataset, train_path, val_path, args):
+    # set_dataset_paths(args)
+    if 'cropped' in dataset:
+        t_loader = train_loader_cropped(train_path, args.batch_size)
+        v_loader = val_loader_cropped(val_path, args.val_batch_size)
     else:
-        t_loader = train_loader(args.train_path, args.batch_size)
-        v_loader = val_loader(args.val_path, args.val_batch_size)
+        t_loader = train_loader(train_path, args.batch_size)
+        v_loader = val_loader(val_path, args.val_batch_size)
     return t_loader, v_loader
 
 
