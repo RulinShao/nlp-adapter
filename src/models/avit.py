@@ -518,7 +518,7 @@ def deit_tiny_patch16_224_adapter(pretrained=False, **kwargs):
 
 
 @register_model
-def deit_base_patch16_224(pretrained=False, **kwargs):
+def deit_base_patch16_224_adapter(pretrained=False, **kwargs):
     """ DeiT base model @ 224x224 from paper (https://arxiv.org/abs/2012.12877).
     ImageNet-1k weights from https://github.com/facebookresearch/deit.
     """
