@@ -79,7 +79,7 @@ def main():
         data_loader.update_task(idx)
 
         task_length = data_loader.num_classes
-        dataset_name = data_loader.dataset_name
+        task_name = data_loader.dataset_name
         model = modify_model(model, task_length)
 
         if args.train_adapter and args.capacity is not None:
@@ -161,7 +161,7 @@ def main():
             model.module.count_alpha()
 
         utils.write_result_to_csv(
-            name=f"{args.name}~set={args.set}~task={idx}",
+            name=f"{args.name}~set={args.set}~task={task_name}",
             curr_acc1=curr_acc1[idx],
             best_acc1=best_acc1[idx],
             save_dir=run_base_dir,
@@ -222,15 +222,15 @@ def main():
 
                 if alpha_diff is not None:
                     writer.add_scalar(
-                        f"alpha/{num_tasks_learned}", alpha_diff, i
+                        f"fine-grained/capacity-alpha/{num_tasks_learned}", alpha_diff, i
                     )
 
             writer.add_scalar(
-                "cl/avg_acc", avg_acc / num_tasks_learned, num_tasks_learned
+                "fine-grained/avg_acc", avg_acc / num_tasks_learned, num_tasks_learned
             )
             if num_tasks_learned > 1:
                 writer.add_scalar(
-                    "cl/avg_bwt", avg_bwt / (num_tasks_learned - 1), num_tasks_learned
+                    "fine-grained/avg_bwt", avg_bwt / (num_tasks_learned - 1), num_tasks_learned
                 )
             torch.cuda.empty_cache()
 
