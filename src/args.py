@@ -45,6 +45,7 @@ def parse_arguments():
         metavar="N",
         help="input batch size for training (default: 64)",
     )
+    parser.add_argument("--val-batch-size", default=16)
     parser.add_argument(
         "--save", type=str, default="full", choices=["full", "adapter", "head", "layer"], help="save full checkpoints if full, save only tranable parameter is partial"
     )
