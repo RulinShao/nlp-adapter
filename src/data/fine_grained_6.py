@@ -49,6 +49,12 @@ class FineGrained:
             train_loader, val_loader = get_loaders(dataset_name, traindir, valdir, args)
             self.train_loaders.append(train_loader)
             self.val_loaders.append(val_loader)
+    
+    def update_task(self, i):
+        self.train_loader = self.train_loaders[i]
+        self.val_loader =  self.val_loaders[i]
+        self.dataset_name = DATASETS[i]
+        self.num_classes = NUM_CLASSES[i]
         
 
 class Cutout(object):
