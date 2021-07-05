@@ -131,7 +131,7 @@ def parse_arguments():
     )
     parser.add_argument("--resume", type=str, default=None, help='optionally resume. checkpoint path')
     parser.add_argument("--model", type=str, help="Type of model.")
-    parser.add_argument("--set", type=str, default='FineGrained', choices=['SplitImageNet'], help="Which dataset to use")
+    parser.add_argument("--set", type=str, default='FineGrained', choices=['SplitImageNet', 'FineGrained'], help="Which dataset to use")
     parser.add_argument("--no-scheduler", action="store_true", help="constant LR")
     parser.add_argument(
         "--iter-lim", default=-1, type=int, help="iteration limitation"
