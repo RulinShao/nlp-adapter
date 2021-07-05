@@ -305,8 +305,11 @@ class VisionTransformer(nn.Module):
             else:
                 param.requires_grad = False
         if new_head:
-            self.reset_classifier_list(new_head)
-            self.head_list.requires_grad = True
+            if self.use_adapter and self.capacity is not None:
+                self.reset_classifier_list(new_head)
+                self.head_list.requires_grad = True
+            else:
+                self.reset_classifier(new_head)
 
     def update_alpha(self, alpha=None, soft_alpha=False):
         if alpha is None:
