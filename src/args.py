@@ -21,7 +21,7 @@ def parse_arguments():
         help="Location to logs/checkpoints",
     )
     parser.add_argument(
-        "--model_name", type=str, default="deit_tiny_patch16_224_adapter", help="timm model name"
+        "--model_name", type=str, default="deit_base_patch16_224_adapter", help="timm model name"
     )
     parser.add_argument(
         "--pretrained", type=bool, default=True, help="whether use a pretrained model as the backbone"
@@ -41,7 +41,7 @@ def parse_arguments():
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=16,
+        default=128,
         metavar="N",
         help="input batch size for training (default: 64)",
     )

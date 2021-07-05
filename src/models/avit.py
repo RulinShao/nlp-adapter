@@ -517,6 +517,26 @@ def deit_tiny_patch16_224_adapter(pretrained=False, **kwargs):
     return model
 
 
+@register_model
+def deit_base_patch16_224(pretrained=False, **kwargs):
+    """ DeiT base model @ 224x224 from paper (https://arxiv.org/abs/2012.12877).
+    ImageNet-1k weights from https://github.com/facebookresearch/deit.
+    """
+    # model_kwargs = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, **kwargs)
+    # model = _create_vision_transformer('deit_base_patch16_224', pretrained=pretrained, **model_kwargs)
+
+    if pretrained:
+        kwargs.setdefault('qk_scale', 768 ** -0.5)
+    model = VisionTransformer(patch_size=16, embed_dim=768, depth=12, num_heads=12, use_adapter=args.train_adapter, capacity=args.capacity, soft_alpha=args.soft_alpha,
+                              **kwargs)
+    model.default_cfg = default_cfgs['deit_base_patch16_224']
+    if pretrained:
+        load_pretrained(
+            model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 3), filter_fn=_conv_filter,
+            strict=False)
+    return model
+
+
 def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
