@@ -1,2 +1,0 @@
-Date Finished,Name,Current Val,Best Val,Save Directory
-07-05-21_14:51:39, 705:fine-grained, deit_small~try=0~set=FineGrained~task=cubs_cropped, 0.0645, 0.0664, outputs/705:fine-grained, deit_small~try=0
