@@ -13,7 +13,7 @@ def parse_arguments():
     parser.add_argument(
         "--config", type=str, default=None, help="Config file to use, YAML format"
     )
-    parser.add_argument("--name", type=str, default="705:fine-grained, deit_small", help="Experiment id.")
+    parser.add_argument("--name", type=str, default="708:fine-grained, vit_small", help="Experiment id.")
     parser.add_argument(
         "--log-dir",
         type=str,
@@ -21,7 +21,7 @@ def parse_arguments():
         help="Location to logs/checkpoints",
     )
     parser.add_argument(
-        "--model_name", type=str, default="deit_small_patch16_224_adapter", help="timm model name"
+        "--model_name", type=str, default="vit_small_patch16_224_adapter", help="timm model name"
     )
     parser.add_argument(
         "--pretrained", type=bool, default=True, help="whether use a pretrained model as the backbone"
@@ -41,7 +41,7 @@ def parse_arguments():
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=16,
+        default=128,
         metavar="N",
         help="input batch size for training (default: 64)",
     )
