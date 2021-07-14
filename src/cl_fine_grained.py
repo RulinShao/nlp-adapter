@@ -45,9 +45,6 @@ def main():
     # Get dataloader.
     data_loader = getattr(data_, args.set)()
 
-    # Get the backbone model.
-    model = get_backbone()
-
     # Track accuracy on all tasks.
     if args.num_tasks:
         best_acc1 = [0.0 for _ in range(args.num_tasks)]
@@ -66,9 +63,7 @@ def main():
     train, test, infer, adapt_test = trainer.train, trainer.test, trainer.infer, trainer.adapt_test
 
     # Iterate through all tasks.
-    if args.set == "FineGrained":
-        args.num_tasks = 5
-    for idx in range(args.num_tasks or 0):
+    for idx in range(5):
         print(f"Task {args.set}: {idx}")
 
         # Update the data loader so that it returns the data for the correct task, also done by passing the task index.
@@ -80,8 +75,12 @@ def main():
 
         task_length = data_loader.num_classes
         task_name = data_loader.dataset_name
+
+        # Get the backbone model.
+        model = get_backbone()
         model = modify_model(model, task_length)
         model = utils.set_gpu(model)
+
         criterion = nn.CrossEntropyLoss().to(args.device)
 
         if args.train_adapter and args.capacity is not None:
