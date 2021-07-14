@@ -13,13 +13,22 @@ def parse_arguments():
     parser.add_argument(
         "--config", type=str, default=None, help="Config file to use, YAML format"
     )
-    parser.add_argument("--name", type=str, default="714:fine-grained, vit_small", help="Experiment id.")
+    ##############################################################################
+    # Environments (gpus, workers)
+    ##############################################################################
     parser.add_argument(
-        "--log-dir",
-        type=str,
-        default="outputs/",
-        help="Location to logs/checkpoints",
+        "--multigpu",
+        default="0,1,2",
+        type=lambda x: [int(a) for a in x.split(",")],
+        help="Which GPUs to use for multigpu training",
     )
+    parser.add_argument("--workers", type=int, default=8, help="how many cpu workers")
+
+
+    ##############################################################################
+    # Experiments (model, batch size, lr, etc.)
+    ##############################################################################
+    parser.add_argument("--name", type=str, default="714:fine-grained, vit_small", help="Experiment id.")
     parser.add_argument(
         "--model_name", type=str, default="vit_small_patch16_224_adapter", help="timm model name"
     )
@@ -39,16 +48,6 @@ def parse_arguments():
         "--train_layer", type=int, default=-1, help="Train the last n layers. 0 for the head layer only."
     )
     parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=128,
-        metavar="N",
-        help="input batch size for training (default: 64)",
-    )
-    parser.add_argument(
-        "--save", type=str, default="full", choices=["full", "adapter", "head", "layer"], help="save full checkpoints if full, save only tranable parameter is partial"
-    )
-    parser.add_argument(
         "--train-weight-tasks",
         type=int,
         default=0,
@@ -56,21 +55,15 @@ def parse_arguments():
         help="number of tasks to train the weights, e.g. 1 for batchensembles. -1 for all tasks",
     )
     parser.add_argument(
-        "--eval_interval", type=int, default=1,
-        help="After every n tasks we perform evaluation on all tasks learned so far",
-    )
-    parser.add_argument(
-        "--multigpu",
-        default="0,1,2",
-        type=lambda x: [int(a) for a in x.split(",")],
-        help="Which GPUs to use for multigpu training",
-    )
-    parser.add_argument("--workers", type=int, default=8, help="how many cpu workers")
-    parser.add_argument(
-        "--task-eval",
-        default=None,
+        "--batch-size",
         type=int,
-        help="Only evaluate on this task (for memory efficiency and grounded task info",
+        default=128,
+        metavar="N",
+        help="input batch size for training (default: 64)",
+    )
+    parser.add_argument(
+        "--save", type=str, default="full", choices=["full", "adapter", "head", "layer"],
+        help="save full checkpoints if full, save only tranable parameter is partial"
     )
     parser.add_argument(
         "--optimizer", type=str, default="adam", help="Which optimizer to use"
@@ -109,9 +102,36 @@ def parse_arguments():
         metavar="M",
         help="Weight decay (default: 0.0001)",
     )
-
+    parser.add_argument(
+        "--train-weight-lr",
+        default=0.00005,
+        type=float,
+        help="While training the weights, which LR to use.",
+    )
     parser.add_argument(
         "--seed", type=int, default=310, metavar="S", help="random seed (default: 310)"
+    )
+
+
+    ##############################################################################
+    # Log & data paths
+    ##############################################################################
+    parser.add_argument("--set",
+                        type=str,
+                        default='FineGrained',
+                        choices=['SplitImageNet', 'FineGrained'],
+                        help="Which dataset to use")
+    parser.add_argument(
+        "--num-tasks",
+        default=100,
+        type=int,
+        help="Number of tasks, None if no adaptation is necessary",
+    )
+    parser.add_argument(
+        "--log-dir",
+        type=str,
+        default="outputs/",
+        help="Location to logs/checkpoints",
     )
     parser.add_argument(
         "--log-interval",
@@ -121,26 +141,28 @@ def parse_arguments():
         help="how many batches to wait before logging training status",
     )
     parser.add_argument(
-        "--data", type=str, default='/home/ec2-user/dataset/ilsvrc2012/', help="Location to store data",
+        "--eval_interval",
+        type=int,
+        default=1,
+        help="After every n tasks we perform evaluation on all tasks learned so far",
     )
     parser.add_argument(
-        "--num-tasks",
-        default=5,
+        "--task-eval",
+        default=None,
         type=int,
-        help="Number of tasks, None if no adaptation is necessary",
+        help="Only evaluate on this task (for memory efficiency and grounded task info",
+    )
+    parser.add_argument(
+        "--data",
+        type=str,
+        default='/home/ec2-user/dataset/ilsvrc2012/',
+        help="Location to store data",
     )
     parser.add_argument("--resume", type=str, default=None, help='optionally resume. checkpoint path')
     parser.add_argument("--model", type=str, help="Type of model.")
-    parser.add_argument("--set", type=str, default='FineGrained', choices=['SplitImageNet', 'FineGrained'], help="Which dataset to use")
     parser.add_argument("--no-scheduler", action="store_true", help="constant LR")
     parser.add_argument(
         "--iter-lim", default=-1, type=int, help="iteration limitation"
-    )
-    parser.add_argument(
-        "--train-weight-lr",
-        default=0.00005,
-        type=float,
-        help="While training the weights, which LR to use.",
     )
     parser.add_argument(
         "--trainer",
