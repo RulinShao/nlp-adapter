@@ -162,6 +162,10 @@ def main():
         if args.train_adapter and args.capacity is not None:
             model.module.count_alpha()
 
+        writer.add_scalar(
+            "fine-grained/best_acc", best_acc1[idx], idx
+        )
+
         utils.write_result_to_csv(
             name=f"{args.name}~set={args.set}~task={task_name}",
             curr_acc1=curr_acc1[idx],
