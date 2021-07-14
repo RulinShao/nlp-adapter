@@ -1,4 +1,4 @@
-from models.vit import VisionTransformer
+from models.avit import VisionTransformer
 
 __all__ = [
     "VisionTransformer",

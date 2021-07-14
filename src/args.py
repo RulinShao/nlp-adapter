@@ -18,7 +18,7 @@ def parse_arguments():
     ##############################################################################
     parser.add_argument(
         "--multigpu",
-        default="0,1,2",
+        default="0,1,2,3",
         type=lambda x: [int(a) for a in x.split(",")],
         help="Which GPUs to use for multigpu training",
     )
