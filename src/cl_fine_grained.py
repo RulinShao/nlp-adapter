@@ -66,6 +66,8 @@ def main():
     train, test, infer, adapt_test = trainer.train, trainer.test, trainer.infer, trainer.adapt_test
 
     # Iterate through all tasks.
+    if args.set == "FineGrained":
+        args.num_tasks = 5
     for idx in range(args.num_tasks or 0):
         print(f"Task {args.set}: {idx}")
 
