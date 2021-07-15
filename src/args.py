@@ -28,7 +28,7 @@ def parse_arguments():
     ##############################################################################
     # Experiments (model, batch size, lr, etc.)
     ##############################################################################
-    parser.add_argument("--name", type=str, default="714:fine-grained, vit_small", help="Experiment id.")
+    parser.add_argument("--name", type=str, default="715:fine-grained, vit_small", help="Experiment id.")
     parser.add_argument(
         "--model_name", type=str, default="vit_small_patch16_224_adapter", help="timm model name"
     )
