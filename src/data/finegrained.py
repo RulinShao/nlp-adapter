@@ -21,8 +21,8 @@ from itertools import chain
 
 torch.multiprocessing.set_sharing_strategy("file_system")
 
-DATASETS=('sketches', 'wikiart', 'flowers', 'cubs_cropped', 'stanford_cars_cropped')
-NUM_CLASSES=(250, 195, 102, 200, 196)
+DATASETS=('flowers', 'cubs_cropped', 'stanford_cars_cropped', 'wikiart', 'sketches')
+NUM_CLASSES=(102, 200, 196, 195, 250)
 # DATASETS=('cubs_cropped', 'stanford_cars_cropped', 'flowers', 'wikiart', 'sketches')
 # NUM_CLASSES=(200, 196, 102, 195, 250)
 INIT_LR=(1e-3, 1e-2, 1e-3, 1e-3, 1e-3)

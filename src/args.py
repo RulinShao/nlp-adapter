@@ -143,7 +143,7 @@ def parse_arguments():
     parser.add_argument(
         "--eval_interval",
         type=int,
-        default=1,
+        default=10,
         help="After every n tasks we perform evaluation on all tasks learned so far",
     )
     parser.add_argument(
