@@ -28,9 +28,9 @@ def parse_arguments():
     ##############################################################################
     # Experiments (model, batch size, lr, etc.)
     ##############################################################################
-    parser.add_argument("--name", type=str, default="715:fine-grained, vit_small", help="Experiment id.")
+    parser.add_argument("--name", type=str, default="725:transfer,in21k->in1k", help="Experiment id.")
     parser.add_argument(
-        "--model_name", type=str, default="vit_small_patch16_224_adapter", help="timm model name"
+        "--model_name", type=str, default="vit_base_patch16_224_in21k_adapter", help="timm model name"
     )
     parser.add_argument(
         "--pretrained", type=bool, default=True, help="whether use a pretrained model as the backbone"
@@ -71,7 +71,7 @@ def parse_arguments():
     parser.add_argument(
         "--epochs",
         type=int,
-        default=100,
+        default=300,
         metavar="N",
         help="number of epochs to train (default: 100)",
     )
@@ -118,19 +118,19 @@ def parse_arguments():
     ##############################################################################
     parser.add_argument("--set",
                         type=str,
-                        default='FineGrained',
+                        default='SplitImageNet',
                         choices=['SplitImageNet', 'FineGrained'],
                         help="Which dataset to use")
     parser.add_argument(
         "--num-tasks",
-        default=100,
+        default=1,
         type=int,
         help="Number of tasks, None if no adaptation is necessary",
     )
     parser.add_argument(
         "--log-dir",
         type=str,
-        default="outputs/",
+        default="outputs/transfer/",
         help="Location to logs/checkpoints",
     )
     parser.add_argument(
