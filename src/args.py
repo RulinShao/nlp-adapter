@@ -57,7 +57,7 @@ def parse_arguments():
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=128,
+        default=512,
         metavar="N",
         help="input batch size for training (default: 64)",
     )
@@ -78,9 +78,9 @@ def parse_arguments():
     parser.add_argument(
         "--lr",
         type=float,
-        default=0.00005,
+        default=0.005,
         metavar="LR",
-        help="learning rate (default: 0.1)",
+        help="learning rate (default: 0.1, 0.00005)",
     )
     parser.add_argument(
         "--lr_policy", type=str, default="cosine_lr", help="lr policy"
