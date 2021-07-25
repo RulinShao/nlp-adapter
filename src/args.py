@@ -78,7 +78,7 @@ def parse_arguments():
     parser.add_argument(
         "--lr",
         type=float,
-        default=0.005,
+        default=0.0005,
         metavar="LR",
         help="learning rate (default: 0.1, 0.00005)",
     )
