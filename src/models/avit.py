@@ -216,7 +216,7 @@ class VisionTransformer(nn.Module):
     def __init__(self, img_size=224, patch_size=16, in_chans=3, num_classes=1000, embed_dim=768, depth=12,
                  num_heads=12, mlp_ratio=4., qkv_bias=True, qk_scale=None, representation_size=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0., embed_layer=PatchEmbed, norm_layer=None,
-                 act_layer=None, weight_init='', use_adapter=False, capacity=None, soft_alpha=False):
+                 act_layer=None, weight_init='', use_adapter=args.train_adapter, capacity=args.capacity, soft_alpha=args.soft_alpha):
         super().__init__()
         self.num_classes = num_classes
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
@@ -500,21 +500,100 @@ def vit_base_patch16_224_in21k_adapter(pretrained=False, **kwargs):
     return model
 
 
+# @register_model
+# def vit_base_patch16_sam_224(pretrained=False, **kwargs):
+#     """ ViT-Base (ViT-B/16) w/ SAM pretrained weights. Paper: https://arxiv.org/abs/2106.01548
+#     """
+#     # model_kwargs = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, representation_size=768, **kwargs)
+#     # model = _create_vision_transformer('vit_base_patch16_sam_224', pretrained=pretrained, **model_kwargs)
+#     # return model
+#     if pretrained:
+#         kwargs.setdefault('qk_scale', 768 ** -0.5)
+#     model = VisionTransformer(patch_size=16, embed_dim=768, depth=12, num_heads=12,representation_size=768, use_adapter=args.train_adapter, capacity=args.capacity, soft_alpha=args.soft_alpha, **kwargs)
+#     model.default_cfg = default_cfgs['vit_base_patch16_sam_224']
+#     if pretrained:
+#         load_pretrained(
+#             model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 3), filter_fn=_conv_filter, strict=False)
+#     return model
+
+
 @register_model
-def vit_base_patch16_sam_224(pretrained=False, **kwargs):
-    """ ViT-Base (ViT-B/16) w/ SAM pretrained weights. Paper: https://arxiv.org/abs/2106.01548
+def vit_base_patch32_sam_224(pretrained=False, **kwargs):
+    """ ViT-Base (ViT-B/32) w/ SAM pretrained weights. Paper: https://arxiv.org/abs/2106.01548
     """
-    # model_kwargs = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12, representation_size=768, **kwargs)
-    # model = _create_vision_transformer('vit_base_patch16_sam_224', pretrained=pretrained, **model_kwargs)
-    # return model
-    if pretrained:
-        kwargs.setdefault('qk_scale', 768 ** -0.5)
-    model = VisionTransformer(patch_size=16, embed_dim=768, depth=12, num_heads=12,representation_size=768, use_adapter=args.train_adapter, capacity=args.capacity, soft_alpha=args.soft_alpha, **kwargs)
-    model.default_cfg = default_cfgs['vit_base_patch16_sam_224']
-    if pretrained:
-        load_pretrained(
-            model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 3), filter_fn=_conv_filter, strict=False)
+    model_kwargs = dict(patch_size=32, embed_dim=768, depth=12, num_heads=12, representation_size=768, **kwargs)
+    model = _create_vision_transformer('vit_base_patch32_sam_224', pretrained=pretrained, **model_kwargs)
     return model
+
+
+def _create_vision_transformer(variant, pretrained=False, default_cfg=None, **kwargs):
+    from timm.models.helpers import build_model_with_cfg
+    # from timm.models.vision_transformer import checkpoint_filter_fn, resize_pos_embed
+
+    default_cfg = default_cfg or default_cfgs[variant]
+    if kwargs.get('features_only', None):
+        raise RuntimeError('features_only not implemented for Vision Transformer models.')
+
+    # NOTE this extra code to support handling of repr size for in21k pretrained models
+    default_num_classes = default_cfg['num_classes']
+    num_classes = kwargs.get('num_classes', default_num_classes)
+    repr_size = kwargs.pop('representation_size', None)
+    if repr_size is not None and num_classes != default_num_classes:
+        # Remove representation layer if fine-tuning. This may not always be the desired action,
+        # but I feel better than doing nothing by default for fine-tuning. Perhaps a better interface?
+        _logger.warning("Removing representation layer for fine-tuning.")
+        repr_size = None
+
+    model = build_model_with_cfg(
+        VisionTransformer, variant, pretrained,
+        default_cfg=default_cfg,
+        representation_size=repr_size,
+        pretrained_filter_fn=checkpoint_filter_fn,
+        pretrained_custom_load='npz' in default_cfg['url'],
+        **kwargs)
+    return model
+
+
+def checkpoint_filter_fn(state_dict, model):
+    """ convert patch embedding weight from manual patchify + linear proj to conv"""
+    out_dict = {}
+    if 'model' in state_dict:
+        # For deit models
+        state_dict = state_dict['model']
+    for k, v in state_dict.items():
+        if 'patch_embed.proj.weight' in k and len(v.shape) < 4:
+            # For old models that I trained prior to conv based patchification
+            O, I, H, W = model.patch_embed.proj.weight.shape
+            v = v.reshape(O, -1, H, W)
+        elif k == 'pos_embed' and v.shape != model.pos_embed.shape:
+            # To resize pos embedding when using model at different size from pretrained weights
+            v = resize_pos_embed(
+                v, model.pos_embed, getattr(model, 'num_tokens', 1), model.patch_embed.grid_size)
+        out_dict[k] = v
+    return out_dict
+
+
+def resize_pos_embed(posemb, posemb_new, num_tokens=1, gs_new=()):
+    # Rescale the grid of position embeddings when loading from state_dict. Adapted from
+    # https://github.com/google-research/vision_transformer/blob/00883dd691c63a6830751563748663526e811cee/vit_jax/checkpoint.py#L224
+    _logger.info('Resized position embedding: %s to %s', posemb.shape, posemb_new.shape)
+    ntok_new = posemb_new.shape[1]
+    if num_tokens:
+        posemb_tok, posemb_grid = posemb[:, :num_tokens], posemb[0, num_tokens:]
+        ntok_new -= num_tokens
+    else:
+        posemb_tok, posemb_grid = posemb[:, :0], posemb[0]
+    gs_old = int(math.sqrt(len(posemb_grid)))
+    if not len(gs_new):  # backwards compatibility
+        gs_new = [int(math.sqrt(ntok_new))] * 2
+    assert len(gs_new) >= 2
+    _logger.info('Position embedding grid-size from %s to %s', [gs_old, gs_old], gs_new)
+    posemb_grid = posemb_grid.reshape(1, gs_old, gs_old, -1).permute(0, 3, 1, 2)
+    posemb_grid = F.interpolate(posemb_grid, size=gs_new, mode='bicubic', align_corners=False)
+    posemb_grid = posemb_grid.permute(0, 2, 3, 1).reshape(1, gs_new[0] * gs_new[1], -1)
+    posemb = torch.cat([posemb_tok, posemb_grid], dim=1)
+    return posemb
+
 
 @register_model
 def deit_tiny_patch16_224_adapter(pretrained=False, **kwargs):
