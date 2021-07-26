@@ -28,9 +28,9 @@ def parse_arguments():
     ##############################################################################
     # Experiments (model, batch size, lr, etc.)
     ##############################################################################
-    parser.add_argument("--name", type=str, default="725:transfer,in21k->in1k", help="Experiment id.")
+    parser.add_argument("--name", type=str, default="726:transfer_sam,in1k->in1k/100", help="Experiment id.")
     parser.add_argument(
-        "--model_name", type=str, default="vit_base_patch16_224_in21k_adapter", help="timm model name"
+        "--model_name", type=str, default="vit_base_patch16_sam_224", help="timm model name"
     )
     parser.add_argument(
         "--pretrained", type=bool, default=True, help="whether use a pretrained model as the backbone"
@@ -57,7 +57,7 @@ def parse_arguments():
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=256,
+        default=32,
         metavar="N",
         help="input batch size for training (default: 64)",
     )
@@ -71,16 +71,16 @@ def parse_arguments():
     parser.add_argument(
         "--epochs",
         type=int,
-        default=30,
+        default=10,
         metavar="N",
         help="number of epochs to train (default: 100)",
     )
     parser.add_argument(
         "--lr",
         type=float,
-        default=0.0005,
+        default=0.00005,
         metavar="LR",
-        help="learning rate (default: 0.1, 0.00005)",
+        help="learning rate (default: 0.1, 0.00005, 0.0005)",
     )
     parser.add_argument(
         "--lr_policy", type=str, default="cosine_lr", help="lr policy"
@@ -123,7 +123,7 @@ def parse_arguments():
                         help="Which dataset to use")
     parser.add_argument(
         "--num-tasks",
-        default=1,
+        default=100,
         type=int,
         help="Number of tasks, None if no adaptation is necessary",
     )
