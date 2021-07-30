@@ -19,7 +19,6 @@ def main():
     parser = argparse.ArgumentParser(description="AdapterCL")
 
     parser.add_argument("--name", type=str, default="730:in21k->cifar10", help="Experiment id.")
-    parser.add_argument("--log-dir", default="outputs/transfer/")
 
     parser.add_argument("--model_name", type=str, default="vit_base_patch16_224_in21k_adapter", help="timm model name")
     parser.add_argument("--pretrained", type=bool, default=True, help="whether use a pretrained model as the backbone")
@@ -48,6 +47,9 @@ def main():
     parser.add_argument("--train-weight-lr", default=0.00005, type=float,
                         help="While training the weights, which LR to use.", )
     parser.add_argument("--seed", type=int, default=310, metavar="S", help="random seed (default: 310)")
+
+    parser.add_argument("--log-dir", default="outputs/transfer/")
+    parser.add_argument("--log-interval", defalt=1, type=int)
     parser.add_argument("--save", type=str, default="full", choices=["full", "adapter", "head", "layer"],
                         help="save full checkpoints if full, save only tranable parameter is partial")
 
