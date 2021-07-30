@@ -35,6 +35,7 @@ def main():
                         help="input batch size for training (default: 64)", )
     parser.add_argument("--epochs", type=int, default=100, metavar="N",
                         help="number of epochs to train (default: 100)", )
+    parser.add_argument("--iter-lim", default=-1, type=int)
     parser.add_argument("--workers", type=int, default=8, help="how many cpu workers")
     parser.add_argument("--optimizer", type=str, default="adam", help="Which optimizer to use")
     parser.add_argument("--lr", type=float, default=0.00005, metavar="LR",
