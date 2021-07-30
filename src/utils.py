@@ -85,3 +85,67 @@ def save_ckpt(model, best_acc1, curr_acc1, run_base_dir, idx):
             },
             run_base_dir / f"task{idx}_adapter_final.pt",
         )
+
+
+def get_cifar_loaders(args):
+    from torchvision import datasets, transforms
+
+    cifar10_mean = (0.4914, 0.4822, 0.4465)
+    cifar10_std = (0.2471, 0.2435, 0.2616)
+
+    train_transform = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(cifar10_mean, cifar10_std),
+    ])
+    test_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(cifar10_mean, cifar10_std),
+    ])
+    num_workers = 2
+    train_dataset = datasets.CIFAR10(
+        args.data_dir, train=True, transform=train_transform, download=True)
+    test_dataset = datasets.CIFAR10(
+        args.data_dir, train=False, transform=test_transform, download=True)
+    train_loader = torch.utils.data.DataLoader(
+        dataset=train_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        pin_memory=True,
+        num_workers=num_workers,
+    )
+    test_loader = torch.utils.data.DataLoader(
+        dataset=test_dataset,
+        batch_size=args.batch_size,
+        shuffle=False,
+        pin_memory=True,
+        num_workers=2,
+    )
+    return train_loader, test_loader
+
+
+def set_seed(args):
+    if args.seed is not None:
+        random.seed(args.seed)
+        torch.manual_seed(args.seed)
+        torch.cuda.manual_seed(args.seed)
+        torch.cuda.manual_seed_all(args.seed)
+
+
+def make_work_dir(args):
+    i = 0
+    while True:
+        run_base_dir = pathlib.Path(f"{args.log_dir}/{args.name}~try={str(i)}")
+
+        if not run_base_dir.exists():
+            os.makedirs(run_base_dir)
+            args.name = args.name + f"~try={i}"
+            break
+        i += 1
+
+        (run_base_dir / "settings.txt").write_text(str(args))
+        args.run_base_dir = run_base_dir
+
+        print(f"=> Saving data in {run_base_dir}")
+    return run_base_dir
