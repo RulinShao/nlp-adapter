@@ -31,7 +31,7 @@ def main():
 
     parser.add_argument("--multigpu", default="0,1,2,3", type=lambda x: [int(a) for a in x.split(",")],
                         help="Which GPUs to use for multigpu training", )
-    parser.add_argument("--batch-size", type=int, default=64, metavar="N",
+    parser.add_argument("--batch-size", type=int, default=128, metavar="N",
                         help="input batch size for training (default: 64)", )
     parser.add_argument("--epochs", type=int, default=100, metavar="N",
                         help="number of epochs to train (default: 100)", )
