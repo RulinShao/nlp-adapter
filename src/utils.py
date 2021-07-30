@@ -7,10 +7,10 @@ import torch.nn as nn
 import models
 import torch.backends.cudnn as cudnn
 
-from args import args
+# from args import args
 
 
-def set_gpu(model=None):
+def set_gpu(args, model=None):
     if args.multigpu is None:
         args.device = torch.device("cpu")
         return model
@@ -28,7 +28,7 @@ def set_gpu(model=None):
             return model
 
 
-def write_result_to_csv(**kwargs):
+def write_result_to_csv(args, **kwargs):
     results = pathlib.Path(args.log_dir) / "results.csv"
 
     if not results.exists():
@@ -48,7 +48,7 @@ def write_result_to_csv(**kwargs):
         )
 
 
-def save_ckpt(model, best_acc1, curr_acc1, run_base_dir, idx):
+def save_ckpt(args, model, best_acc1, curr_acc1, run_base_dir, idx):
     if args.save == "full":
         torch.save(
             {

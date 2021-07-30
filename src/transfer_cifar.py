@@ -72,7 +72,7 @@ def main():
     # Get the backbone model.
     model = get_backbone()
     model = modify_model(model, task_length)
-    model = utils.set_gpu(model)
+    model = utils.set_gpu(args, model)
 
     criterion = nn.CrossEntropyLoss().to(args.device)
 
@@ -152,13 +152,14 @@ def main():
     )
 
     utils.write_result_to_csv(
+        args = args,
         name=f"{args.name}~set=cifar{args.num_class}",
         curr_acc1=curr_acc1,
         best_acc1=best_acc1,
         save_dir=run_base_dir,
     )
 
-    utils.save_ckpt(model, best_acc1, curr_acc1, run_base_dir, 0)
+    utils.save_ckpt(args, model, best_acc1, curr_acc1, run_base_dir, 0)
 
     # Save memory by deleting the optimizer and scheduler.
     del optimizer, scheduler, params, model
