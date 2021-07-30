@@ -84,7 +84,8 @@ def main():
     # model = get_backbone(img_size=args.img_size)
     model = eval(args.model_name)(
         pretrained=args.pretrained,
-        img_size=args.img_size, num_classes=args.num_class, patch_size=args.patch)
+        img_size=args.img_size, num_classes=args.num_class)
+    # , patch_size=args.patch)
     model = modify_model(model, task_length)
     model = utils.set_gpu(model, args)
 
