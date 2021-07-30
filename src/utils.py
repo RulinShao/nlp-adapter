@@ -102,10 +102,12 @@ def get_cifar_loaders(args=None):
     train_transform = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
+        transforms.Resize(224),
         transforms.ToTensor(),
         transforms.Normalize(cifar10_mean, cifar10_std),
     ])
     test_transform = transforms.Compose([
+        transforms.Resize(224),
         transforms.ToTensor(),
         transforms.Normalize(cifar10_mean, cifar10_std),
     ])

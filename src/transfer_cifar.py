@@ -53,8 +53,8 @@ def main():
 
     parser.add_argument("--num-class", default=10, type=int)
     parser.add_argument("--data-dir", default="../../dataset/")
-    parser.add_argument("--img-size", default=32, type=int)
-    parser.add_argument("--patch", default=4, type=int)
+    parser.add_argument("--img-size", default=224, type=int)
+    # parser.add_argument("--patch", default=4, type=int)
 
     args = parser.parse_args()
 
