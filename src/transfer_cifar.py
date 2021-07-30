@@ -9,6 +9,7 @@ from models.utils import get_backbone, get_task_model, modify_model
 
 from timm.models import load_checkpoint, create_model
 import models.avit
+from models.avit import vit_base_patch16_224_in21k_adapter
 
 
 import argparse
