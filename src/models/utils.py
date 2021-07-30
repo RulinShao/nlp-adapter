@@ -5,12 +5,13 @@ from args import args
 from timm.models import load_checkpoint, create_model
 
 
-def get_backbone():
+def get_backbone(img_size=224):
     # Get the model.
     model = create_model(args.model_name,
                          pretrained=args.pretrained,
                          num_classes=1000,
-                         in_chans=3, )
+                         in_chans=3,
+                         img_size=img_size)
     return model
 
 

@@ -50,8 +50,9 @@ def main():
     parser.add_argument("--save", type=str, default="full", choices=["full", "adapter", "head", "layer"],
                         help="save full checkpoints if full, save only tranable parameter is partial")
 
-    parser.add_argument("--num-class", default=10)
+    parser.add_argument("--num-class", default=10, type=int)
     parser.add_argument("--data-dir", default="../../dataset/")
+    parser.add_argument("--img-size", default=32, type=int)
 
     args = parser.parse_args()
 
@@ -78,7 +79,7 @@ def main():
     task_length = args.num_class
 
     # Get the backbone model.
-    model = get_backbone()
+    model = get_backbone(img_size=args.img_size)
     model = modify_model(model, task_length)
     model = utils.set_gpu(model, args)
 
