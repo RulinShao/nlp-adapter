@@ -62,7 +62,7 @@ def main():
 
     writer = SummaryWriter(log_dir=run_base_dir)
 
-    trainer = getattr(trainers, args.trainer or "default")
+    trainer = getattr(trainers, "default")
     print(f"=> Using trainer {trainer}")
 
     train, test, infer, adapt_test = trainer.train, trainer.test, trainer.infer, trainer.adapt_test
