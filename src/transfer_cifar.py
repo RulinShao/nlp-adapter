@@ -49,7 +49,7 @@ def main():
     parser.add_argument("--seed", type=int, default=310, metavar="S", help="random seed (default: 310)")
 
     parser.add_argument("--log-dir", default="outputs/transfer/")
-    parser.add_argument("--log-interval", defalt=1, type=int)
+    parser.add_argument("--log-interval", default=1, type=int)
     parser.add_argument("--save", type=str, default="full", choices=["full", "adapter", "head", "layer"],
                         help="save full checkpoints if full, save only tranable parameter is partial")
 
