@@ -1,5 +1,3 @@
-from args import args
-
 import torch
 import torch.nn as nn
 
@@ -8,7 +6,10 @@ def init(args):
     pass
 
 
-def train(model, writer, train_loader, optimizer, criterion, epoch, task_idx, data_loader=None):
+def train(model, writer, train_loader, optimizer, criterion, epoch, task_idx, data_loader=None, args=None):
+    if args is None:
+        from args import args
+
     model.zero_grad()
     model.train()
 
@@ -35,7 +36,10 @@ def train(model, writer, train_loader, optimizer, criterion, epoch, task_idx, da
                 writer.add_scalar(f"train/task_{task_idx}/loss", loss.item(), t)
 
 
-def test(model, writer, criterion, test_loader, epoch, task_idx):
+def test(model, writer, criterion, test_loader, epoch, task_idx, args=None):
+    if args is None:
+        from args import args
+
     model.zero_grad()
     model.eval()
     test_loss = 0
@@ -80,7 +84,10 @@ def test(model, writer, criterion, test_loader, epoch, task_idx):
     return test_acc
 
 
-def infer(model, task_id, writer, criterion, train_loader, use_soft=False):
+def infer(model, task_id, writer, criterion, train_loader, use_soft=False, args=None):
+    if args is None:
+        from args import args
+
     if task_id < model.module.capacity:
         print(f"=> Using the {task_id}-th adapters in all layers..")
         alpha = torch.zeros_like(model.module.alpha)
@@ -113,7 +120,9 @@ def infer(model, task_id, writer, criterion, train_loader, use_soft=False):
         model.train()
 
 
-def adapt_test(model, writer, criterion, test_loader, task_idx, alpha_list, use_soft=False):
+def adapt_test(model, writer, criterion, test_loader, task_idx, alpha_list, use_soft=False, args=None):
+    if args is None:
+        from args import args
 
     remeber_alpha = True
     if len(alpha_list) > 0:

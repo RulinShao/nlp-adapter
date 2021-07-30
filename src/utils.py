@@ -7,13 +7,13 @@ import torch.nn as nn
 import models
 import torch.backends.cudnn as cudnn
 
-# from args import args
 
-
-def set_gpu(args, model=None):
+def set_gpu(model=None, args=None):
+    if args is None:
+        from args import args
     if args.multigpu is None:
         args.device = torch.device("cpu")
-        return model, args
+        return model
     else:
         # DataParallel will divide and allocate batch_size to all available GPUs
         print(f"=> Parallelizing on {args.multigpu} gpus")
@@ -25,10 +25,12 @@ def set_gpu(args, model=None):
             model = torch.nn.DataParallel(model, device_ids=args.multigpu).cuda(
                 args.multigpu[0]
             )  
-            return model, args
+            return model
 
 
-def write_result_to_csv(args, **kwargs):
+def write_result_to_csv(args=None, **kwargs):
+    if args is None:
+        from args import args
     results = pathlib.Path(args.log_dir) / "results.csv"
 
     if not results.exists():
@@ -48,7 +50,9 @@ def write_result_to_csv(args, **kwargs):
         )
 
 
-def save_ckpt(args, model, best_acc1, curr_acc1, run_base_dir, idx):
+def save_ckpt(model, best_acc1, curr_acc1, run_base_dir, idx, args=None):
+    if args is None:
+        from args import args
     if args.save == "full":
         torch.save(
             {
@@ -87,7 +91,9 @@ def save_ckpt(args, model, best_acc1, curr_acc1, run_base_dir, idx):
         )
 
 
-def get_cifar_loaders(args):
+def get_cifar_loaders(args=None):
+    if args is None:
+        from args import args
     from torchvision import datasets, transforms
 
     cifar10_mean = (0.4914, 0.4822, 0.4465)
@@ -125,7 +131,9 @@ def get_cifar_loaders(args):
     return train_loader, test_loader
 
 
-def set_seed(args):
+def set_seed(args=None):
+    if args is None:
+        from args import args
     if args.seed is not None:
         import random
         random.seed(args.seed)
@@ -134,7 +142,9 @@ def set_seed(args):
         torch.cuda.manual_seed_all(args.seed)
 
 
-def make_work_dir(args):
+def make_work_dir(args=None):
+    if args is None:
+        from args import args
     import os
     i = 0
     while True:
@@ -149,5 +159,5 @@ def make_work_dir(args):
         (run_base_dir / "settings.txt").write_text(str(args))
         args.run_base_dir = run_base_dir
 
-        print(f"=> Saving data in {run_base_dir}")
+    print(f"=> Saving data in {run_base_dir}")
     return run_base_dir

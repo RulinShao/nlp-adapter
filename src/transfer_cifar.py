@@ -72,14 +72,14 @@ def main():
     trainer = getattr(trainers, "default")
     print(f"=> Using trainer {trainer}")
 
-    train, test, infer, adapt_test = trainer.train, trainer.test, trainer.infer, trainer.adapt_test
+    train, test= trainer.train, trainer.test
 
     task_length = args.num_class
 
     # Get the backbone model.
     model = get_backbone()
     model = modify_model(model, task_length)
-    model, args = utils.set_gpu(args, model)
+    model = utils.set_gpu(model, args)
 
     criterion = nn.CrossEntropyLoss().to(args.device)
 
@@ -135,10 +135,11 @@ def main():
             criterion,
             epoch,
             0,
+            args=args
         )
 
         curr_acc1 = test(
-            model, writer, criterion, test_loader, epoch, 0
+            model, writer, criterion, test_loader, epoch, 0, args=args
         )
         if curr_acc1 > best_acc1:
             best_acc1 = curr_acc1
@@ -159,14 +160,14 @@ def main():
     )
 
     utils.write_result_to_csv(
-        args = args,
         name=f"{args.name}~set=cifar{args.num_class}",
         curr_acc1=curr_acc1,
         best_acc1=best_acc1,
         save_dir=run_base_dir,
+        args=args,
     )
 
-    utils.save_ckpt(args, model, best_acc1, curr_acc1, run_base_dir, 0)
+    utils.save_ckpt(model, best_acc1, curr_acc1, run_base_dir, 0, args)
 
     # Save memory by deleting the optimizer and scheduler.
     del optimizer, scheduler, params, model
