@@ -135,6 +135,7 @@ def set_seed(args):
 
 
 def make_work_dir(args):
+    import os
     i = 0
     while True:
         run_base_dir = pathlib.Path(f"{args.log_dir}/{args.name}~try={str(i)}")
