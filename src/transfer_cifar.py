@@ -72,7 +72,7 @@ def main():
     # Get the backbone model.
     model = get_backbone()
     model = modify_model(model, task_length)
-    model = utils.set_gpu(args, model)
+    model, args = utils.set_gpu(args, model)
 
     criterion = nn.CrossEntropyLoss().to(args.device)
 
