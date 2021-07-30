@@ -14,40 +14,47 @@ import models.avit
 import argparse
 
 
-parser = argparse.ArgumentParser(description="AdapterCL")
-
-parser.add_argument("--name", type=str, default="730:in21k->cifar10", help="Experiment id.")
-parser.add_argument("--log-dir", default="outputs/transfer/")
-
-parser.add_argument("--model_name", type=str, default="vit_base_patch16_224_in21k_adapter", help="timm model name")
-parser.add_argument("--pretrained", type=bool, default=True, help="whether use a pretrained model as the backbone")
-parser.add_argument("--train_adapter", type=bool, default=True, help="Train the adapter and norm layers only")
-parser.add_argument("--capacity", type=int, default=None, help="The maximum of the number of adapters can be added.")
-parser.add_argument("--soft_alpha", type=bool, default=False)
-parser.add_argument("--train_layer", type=int, default=-1, help="Train the last n layers. 0 for the head layer only.")
-
-parser.add_argument("--multigpu", default="0,1,2,3", type=lambda x: [int(a) for a in x.split(",")], help="Which GPUs to use for multigpu training",)
-parser.add_argument("--batch-size", type=int, default=256, metavar="N", help="input batch size for training (default: 64)",)
-parser.add_argument("--epochs", type=int, default=100, metavar="N", help="number of epochs to train (default: 100)",)
-parser.add_argument("--workers", type=int, default=8, help="how many cpu workers")
-parser.add_argument("--optimizer", type=str, default="adam", help="Which optimizer to use")
-parser.add_argument("--lr", type=float, default=0.00005, metavar="LR", help="learning rate (default: 0.1, 0.00005, 0.0005)",)
-parser.add_argument("--lr_policy", type=str, default="exp_lr", choices=["cosine_lr", "exp_lr"], help="lr policy")
-parser.add_argument("--warmup_length", type=int, default=5, help="warm up length")
-parser.add_argument("--momentum", type=float, default=0.9, metavar="M", help="Momentum (default: 0.9)",)
-parser.add_argument("--wd", type=float, default=0.000, help="Weight decay (default: 0.0001)",)
-parser.add_argument("--train-weight-lr", default=0.00005, type=float, help="While training the weights, which LR to use.",)
-parser.add_argument("--seed", type=int, default=310, metavar="S", help="random seed (default: 310)")
-parser.add_argument( "--save", type=str, default="full", choices=["full", "adapter", "head", "layer"], help="save full checkpoints if full, save only tranable parameter is partial")
-
-
-parser.add_argument("--num-class", default=10)
-parser.add_argument("--data-dir", default="../../dataset/")
-
-args = parser.parse_args()
-
-
 def main():
+    parser = argparse.ArgumentParser(description="AdapterCL")
+
+    parser.add_argument("--name", type=str, default="730:in21k->cifar10", help="Experiment id.")
+    parser.add_argument("--log-dir", default="outputs/transfer/")
+
+    parser.add_argument("--model_name", type=str, default="vit_base_patch16_224_in21k_adapter", help="timm model name")
+    parser.add_argument("--pretrained", type=bool, default=True, help="whether use a pretrained model as the backbone")
+    parser.add_argument("--train_adapter", type=bool, default=True, help="Train the adapter and norm layers only")
+    parser.add_argument("--capacity", type=int, default=None,
+                        help="The maximum of the number of adapters can be added.")
+    parser.add_argument("--soft_alpha", type=bool, default=False)
+    parser.add_argument("--train_layer", type=int, default=-1,
+                        help="Train the last n layers. 0 for the head layer only.")
+
+    parser.add_argument("--multigpu", default="0,1,2,3", type=lambda x: [int(a) for a in x.split(",")],
+                        help="Which GPUs to use for multigpu training", )
+    parser.add_argument("--batch-size", type=int, default=256, metavar="N",
+                        help="input batch size for training (default: 64)", )
+    parser.add_argument("--epochs", type=int, default=100, metavar="N",
+                        help="number of epochs to train (default: 100)", )
+    parser.add_argument("--workers", type=int, default=8, help="how many cpu workers")
+    parser.add_argument("--optimizer", type=str, default="adam", help="Which optimizer to use")
+    parser.add_argument("--lr", type=float, default=0.00005, metavar="LR",
+                        help="learning rate (default: 0.1, 0.00005, 0.0005)", )
+    parser.add_argument("--lr_policy", type=str, default="exp_lr", choices=["cosine_lr", "exp_lr"], help="lr policy")
+    parser.add_argument("--warmup_length", type=int, default=5, help="warm up length")
+    parser.add_argument("--momentum", type=float, default=0.9, metavar="M", help="Momentum (default: 0.9)", )
+    parser.add_argument("--wd", type=float, default=0.000, help="Weight decay (default: 0.0001)", )
+    parser.add_argument("--train-weight-lr", default=0.00005, type=float,
+                        help="While training the weights, which LR to use.", )
+    parser.add_argument("--seed", type=int, default=310, metavar="S", help="random seed (default: 310)")
+    parser.add_argument("--save", type=str, default="full", choices=["full", "adapter", "head", "layer"],
+                        help="save full checkpoints if full, save only tranable parameter is partial")
+
+    parser.add_argument("--num-class", default=10)
+    parser.add_argument("--data-dir", default="../../dataset/")
+
+    args = parser.parse_args()
+
+
     utils.set_seed(args)
 
     # Make the a directory corresponding to this run for saving results, checkpoints etc.
