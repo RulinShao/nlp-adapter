@@ -1,22 +1,11 @@
-import os
-import pathlib
-import random
-
-import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR, ExponentialLR
 from torch.utils.tensorboard import SummaryWriter
 
-import torchvision
-import torchvision.transforms as transforms
-
-# from args import args
-import data as data_
 import trainers
 import utils
 from models.utils import get_backbone, get_task_model, modify_model
-
 
 from timm.models import load_checkpoint, create_model
 import models.avit

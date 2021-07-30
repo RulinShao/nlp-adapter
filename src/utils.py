@@ -127,6 +127,7 @@ def get_cifar_loaders(args):
 
 def set_seed(args):
     if args.seed is not None:
+        import random
         random.seed(args.seed)
         torch.manual_seed(args.seed)
         torch.cuda.manual_seed(args.seed)
