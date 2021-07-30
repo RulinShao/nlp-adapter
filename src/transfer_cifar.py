@@ -53,6 +53,7 @@ def main():
     parser.add_argument("--num-class", default=10, type=int)
     parser.add_argument("--data-dir", default="../../dataset/")
     parser.add_argument("--img-size", default=32, type=int)
+    parser.add_argument("--patch", default=4, type=int)
 
     args = parser.parse_args()
 
@@ -79,7 +80,10 @@ def main():
     task_length = args.num_class
 
     # Get the backbone model.
-    model = get_backbone(img_size=args.img_size)
+    # model = get_backbone(img_size=args.img_size)
+    model = eval(args.model)(
+        pretrained=args.pretrained,
+        img_size=args.img_size, num_classes=args.num_class, patch_size=args.patch)
     model = modify_model(model, task_length)
     model = utils.set_gpu(model, args)
 
