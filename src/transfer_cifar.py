@@ -17,6 +17,7 @@ import argparse
 parser = argparse.ArgumentParser(description="AdapterCL")
 
 parser.add_argument("--name", type=str, default="730:in21k->cifar10", help="Experiment id.")
+parser.add_argument("--log-dir", default="outputs/transfer/")
 
 parser.add_argument("--model_name", type=str, default="vit_base_patch16_224_in21k_adapter", help="timm model name")
 parser.add_argument("--pretrained", type=bool, default=True, help="whether use a pretrained model as the backbone")
