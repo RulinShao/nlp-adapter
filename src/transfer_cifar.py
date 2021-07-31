@@ -20,7 +20,7 @@ def main():
 
     parser.add_argument("--name", type=str, default="730:in21k->cifar100", help="Experiment id.")
 
-    parser.add_argument("--model_name", type=str, default="vit_base_patch16_224_in21k_adapter", help="timm model name")
+    parser.add_argument("--model", type=str, default="vit_base_patch16_224_in21k_adapter", help="timm model name")
     parser.add_argument("--pretrained", type=bool, default=True, help="whether use a pretrained model as the backbone")
     parser.add_argument("--train_adapter", type=bool, default=True, help="Train the adapter and norm layers only")
     parser.add_argument("--capacity", type=int, default=None,
@@ -83,7 +83,7 @@ def main():
 
     # Get the backbone model.
     # model = get_backbone(img_size=args.img_size)
-    model = eval(args.model_name)(
+    model = eval(args.model)(
         pretrained=args.pretrained,
         img_size=args.img_size, num_classes=args.num_class)
     # , patch_size=args.patch)
