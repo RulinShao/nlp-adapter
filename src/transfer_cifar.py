@@ -18,7 +18,7 @@ import argparse
 def main():
     parser = argparse.ArgumentParser(description="AdapterCL")
 
-    parser.add_argument("--name", type=str, default="730:in21k->cifar10", help="Experiment id.")
+    parser.add_argument("--name", type=str, default="730:in21k->cifar100", help="Experiment id.")
 
     parser.add_argument("--model_name", type=str, default="vit_base_patch16_224_in21k_adapter", help="timm model name")
     parser.add_argument("--pretrained", type=bool, default=True, help="whether use a pretrained model as the backbone")
@@ -53,7 +53,7 @@ def main():
     parser.add_argument("--save", type=str, default="full", choices=["full", "adapter", "head", "layer"],
                         help="save full checkpoints if full, save only tranable parameter is partial")
 
-    parser.add_argument("--num-class", default=10, type=int)
+    parser.add_argument("--num-class", default=100, type=int)
     parser.add_argument("--data-dir", default="../../dataset/")
     parser.add_argument("--img-size", default=224, type=int)
 

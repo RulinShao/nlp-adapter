@@ -96,26 +96,41 @@ def get_cifar_loaders(args=None):
         from args import args
     from torchvision import datasets, transforms
 
-    cifar10_mean = (0.4914, 0.4822, 0.4465)
-    cifar10_std = (0.2471, 0.2435, 0.2616)
+    mean = {
+        'cifar10': (0.4914, 0.4822, 0.4465),
+        'cifar100': (0.5071, 0.4867, 0.4408),
+    }
+
+    std = {
+        'cifar10': (0.2023, 0.1994, 0.2010),
+        'cifar100': (0.2675, 0.2565, 0.2761),
+    }
 
     train_transform = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.Resize(224),
         transforms.ToTensor(),
-        transforms.Normalize(cifar10_mean, cifar10_std),
+        transforms.Normalize(mean[f"cifar{args.num_class}"], std[f"cifar{args.num_class}"]),
     ])
     test_transform = transforms.Compose([
         transforms.Resize(224),
         transforms.ToTensor(),
-        transforms.Normalize(cifar10_mean, cifar10_std),
+        transforms.Normalize(mean[f"cifar{args.num_class}"], std[f"cifar{args.num_class}"]),
     ])
     num_workers = 2
-    train_dataset = datasets.CIFAR10(
-        args.data_dir, train=True, transform=train_transform, download=True)
-    test_dataset = datasets.CIFAR10(
-        args.data_dir, train=False, transform=test_transform, download=True)
+    if args.num_class == 10:
+        train_dataset = datasets.CIFAR10(
+            args.data_dir, train=True, transform=train_transform, download=True)
+        test_dataset = datasets.CIFAR10(
+            args.data_dir, train=False, transform=test_transform, download=True)
+    elif args.num_class == 100:
+        train_dataset = datasets.CIFAR100(
+            args.data_dir, train=True, transform=train_transform, download=True)
+        test_dataset = datasets.CIFAR100(
+            args.data_dir, train=False, transform=test_transform, download=True)
+    else:
+        AssertionError
     train_loader = torch.utils.data.DataLoader(
         dataset=train_dataset,
         batch_size=args.batch_size,
